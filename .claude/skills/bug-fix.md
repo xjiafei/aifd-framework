@@ -1,7 +1,6 @@
 ---
 name: bug-fix
-description: "当用户报告 Bug、异常或需要修复缺陷时使用。"
-disable-model-invocation: true
+description: "当用户明确要求启动缺陷修复流程（技术分析→修复实现→验证收尾）时使用。触发词：/bug-fix、修复 Bug、处理缺陷、排查异常。"
 ---
 
 # /bug-fix — 缺陷修复流程

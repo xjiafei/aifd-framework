@@ -1,7 +1,6 @@
 ---
 name: new-feature
-description: "当用户提出新功能开发需求时使用。"
-disable-model-invocation: true
+description: "当用户明确要求启动新功能的完整研发流程（需求分析→产品设计→技术设计→实现→收尾）时使用。触发词：/new-feature、新增功能、开发新功能、启动功能研发。"
 ---
 
 # /new-feature — 新功能全流程研发

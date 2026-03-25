@@ -1,7 +1,6 @@
 ---
 name: close-loop
-description: "当技术设计审批通过、需要进入代码实现阶段时使用。"
-disable-model-invocation: true
+description: "当技术设计已审批通过、需要启动自动闭环（coding→code review→testing→acceptance）时使用。触发词：/close-loop、开始实现、进入编码、启动闭环。"
 ---
 
 # /close-loop — P4 自动闭环
