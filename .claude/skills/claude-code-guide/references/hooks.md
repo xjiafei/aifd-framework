@@ -11,23 +11,11 @@
 
 ---
 
-## JSON 格式（两种写法均支持）
+## JSON 格式
 
-### 简洁格式（当前项目使用）
-```json
-{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Write|Edit",
-        "command": "bash -c 'your-check-command'"
-      }
-    ]
-  }
-}
-```
+### 嵌套格式（唯一支持的格式）
 
-### 嵌套格式（官方推荐，更灵活）
+> ⚠️ 旧版简洁格式（直接写 `command` 字段）已不再支持，会报 `hooks: Expected array, but received undefined`。必须使用嵌套格式，内层 `hooks` 字段是必须的。
 ```json
 {
   "hooks": {
@@ -128,7 +116,12 @@
     "PreToolUse": [
       {
         "matcher": "Write|Edit",
-        "command": "bash -c 'FILE=\"$CLAUDE_TOOL_INPUT_FILE_PATH\"; case \"$FILE\" in src/*|lib/*) if [ -z \"$(ls docs/plans/active/ 2>/dev/null | grep -v .gitkeep)\" ]; then echo \"BLOCKED: 请先创建执行计划\" >&2; exit 2; fi;; esac; exit 0'"
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'FILE=\"$CLAUDE_TOOL_INPUT_FILE_PATH\"; case \"$FILE\" in src/*|lib/*) if [ -z \"$(ls docs/plans/active/ 2>/dev/null | grep -v .gitkeep)\" ]; then echo \"BLOCKED: 请先创建执行计划\" >&2; exit 2; fi;; esac; exit 0'"
+          }
+        ]
       }
     ]
   }
@@ -142,7 +135,12 @@
     "PreToolUse": [
       {
         "matcher": "Write(.env*)|Read(.env*)",
-        "command": "bash -c 'echo \"BLOCKED: 禁止读写 .env 文件\" >&2; exit 2'"
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'echo \"BLOCKED: 禁止读写 .env 文件\" >&2; exit 2'"
+          }
+        ]
       }
     ]
   }
@@ -177,7 +175,12 @@
     "Stop": [
       {
         "matcher": "*",
-        "command": "bash -c 'cd \"$CLAUDE_PROJECT_DIR\" && npm test --silent 2>&1 | tail -5'"
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'cd \"$CLAUDE_PROJECT_DIR\" && npm test --silent 2>&1 | tail -5'"
+          }
+        ]
       }
     ]
   }
@@ -191,7 +194,12 @@
     "PreToolUse": [
       {
         "matcher": "Bash",
-        "command": "bash -c 'echo \"$CLAUDE_TOOL_INPUT\" | python3 -c \"import sys,json; cmd=json.load(sys.stdin).get(\\\"command\\\",\\\"\\\"); exit(2 if any(x in cmd for x in [\\\"rm -rf /\\\",\\\"DROP TABLE\\\",\\\"--force\\\"]) else 0)\"'"
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'echo \"$CLAUDE_TOOL_INPUT\" | python3 -c \"import sys,json; cmd=json.load(sys.stdin).get(\\\"command\\\",\\\"\\\"); exit(2 if any(x in cmd for x in [\\\"rm -rf /\\\",\\\"DROP TABLE\\\",\\\"--force\\\"]) else 0)\"'"
+          }
+        ]
       }
     ]
   }
