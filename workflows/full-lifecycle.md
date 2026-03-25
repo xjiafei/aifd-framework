@@ -129,28 +129,48 @@ Task 5: [P5] 测试验证与收尾   (blockedBy: 4)
 
 ### DYNAMIC_INJECT 填充协议（编排者必须执行）
 
-在派发任何子代理前，编排者必须将 agent 文件中 `<!-- DYNAMIC_INJECT_START -->` 到 `<!-- DYNAMIC_INJECT_END -->` 区域的内容**替换**为当前项目上下文。填充内容规范：
+**核心机制**：agent 文件中的 `<!-- DYNAMIC_INJECT_START/END -->` 是注入点标记，表示"派发此 agent 时，在此处追加项目上下文"。**不需要修改 agent 文件本身**，而是在调用 Agent 工具时，将注入内容拼入 prompt。
 
-**对所有 agent**（通用字段）：
+**三步操作**：
+
+**Step 1 — 读取 agent 文件**
 ```
+Read .claude/agents/xxx-agent.md → 获取 agent 完整指令
+```
+
+**Step 2 — 收集注入内容**（从以下来源读取）
+
+| 注入字段 | 来源 |
+|---------|------|
+| 项目名称、技术栈、构建命令、测试命令 | `CLAUDE.md §8 项目定制区` |
+| 当前功能名称 | `workspace/stage-status.json` → `features` 中 running 的功能 |
+| 相关知识文件路径 | `docs/knowledges/index.md` → 按业务关键词匹配 |
+| 代码规范（dev-agent 额外） | `docs/knowledges/standards/{tech}.md`（如存在） |
+| 当前里程碑（dev-agent 额外） | `docs/plans/active/{feature}.md` 当前里程碑 |
+
+**Step 3 — 拼接 prompt 后调用 Agent 工具**
+
+```
+[agent 文件完整内容]
+
+---
 ## 当前项目上下文（编排者注入）
 
-- **项目名称**：{projectName from stage-status.json}
-- **技术栈**：{技术栈，来自 CLAUDE.md §8 或 architecture.md}
-- **构建命令**：{构建命令，来自 CLAUDE.md §8}
-- **测试命令**：{测试命令，来自 CLAUDE.md §8}
+- **项目名称**：{xxx}
+- **技术栈**：{xxx}
+- **构建命令**：{xxx}
+- **测试命令**：{xxx}
 - **当前功能**：{feature-name}
-- **相关知识**：{来自 docs/knowledges/index.md 的匹配条目路径列表}
+- **相关知识**：[docs/knowledges/xxx.md, ...]
+（dev-agent 额外）
+- **代码规范**：docs/knowledges/standards/{tech}.md
+- **当前里程碑**：M### — {里程碑描述}
+---
+
+[具体任务描述]
 ```
 
-**对 dev-agent 额外注入**：
-```
-- **代码规范**：参见 docs/knowledges/standards/{tech}-standards.md（如存在）
-- **已有模式**：参见 docs/knowledges/patterns/（如存在，列出相关文件）
-- **当前里程碑**：{当前里程碑编号和描述}
-```
-
-**实现方式**：编排者在 Prompt 中直接包含注入内容，附在 agent 文件内容之后传递给子代理。不需要修改 agent 文件本身（保持 agent 文件的可复用性）。
+> **如果 CLAUDE.md §8 为空**（未完成 `/init-project`），只注入功能名称和知识文件路径，其余字段省略。
 
 ### 调度时不传入
 
@@ -459,10 +479,10 @@ feature_name: {feature-name}
 |------|------|----------|
 | CRITICAL | 安全漏洞、数据丢失风险、架构违规 | 必须修复，派发 dev-agent 修复后重新评审；内部重试上限 3 次，超出则 +1 轮次重启 |
 | HIGH | 明显 Bug、性能问题、缺失错误处理 | **必须明确决策**：立即修复 或 登记 tracked debt（含处理计划），不可静默继续 |
-| MEDIUM | 代码风格、可读性、最佳实践偏离 | 建议修复，记录到 `workspace/code-review-log.md` |
-| LOW | 命名建议、注释补充 | 可选修复，记录到 `workspace/code-review-log.md` |
+| MEDIUM | 代码风格、可读性、最佳实践偏离 | 建议修复，记录到 `docs/specs/{feature}/review-log.md` |
+| LOW | 命名建议、注释补充 | 可选修复，记录到 `docs/specs/{feature}/review-log.md` |
 
-4. 所有问题记录到 `workspace/code-review-log.md`（OPEN 状态）
+4. 所有问题记录到 `docs/specs/{feature}/review-log.md`（OPEN 状态）
 5. 结论档位（见 reviewer-agent.md）：
    - `APPROVED`：无 CRITICAL 且无 HIGH → 可进入 4.3
    - `APPROVED_WITH_HIGH`：无 CRITICAL，有 HIGH → 必须完成 HIGH 决策后才可进入 4.3
@@ -484,9 +504,9 @@ feature_name: {feature-name}
 3. **测试覆盖完整性门禁（必须通过才能继续）**：
    - 覆盖矩阵无 `not-executed` / `pending` 的 P0 用例
    - 所有 P0 用例为 PASS（BLOCKED 需说明原因，不可静默跳过）
-4. **结构化输出（必须持久化，供健康检查和后续分析使用）**：
-   - 将覆盖率矩阵写入 `workspace/test-coverage-matrix.md`（每轮覆盖，追加版本标记）
-   - 将测试结论写入 `workspace/test-result.json`，格式：
+4. **结构化输出（必须持久化，与功能文档一起归档）**：
+   - 将覆盖率矩阵写入 `docs/specs/{feature}/test-report.md`（每轮追加，标注 Round N）
+   - 将测试结论写入 `docs/specs/{feature}/test-result.json`，格式：
      ```json
      {
        "feature": "{feature-name}",
@@ -499,7 +519,7 @@ feature_name: {feature-name}
      }
      ```
 5. **P0 Bug 存在** → 触发 BUG_FIX Restart，+1 轮次
-6. **P1/P2 Bug** → 记录到 `workspace/code-review-log.md`，继续流程
+6. **P1/P2 Bug** → 记录到 `docs/specs/{feature}/review-log.md`（与 CR 日志共用，标注来源为 testing），继续流程
 
 ### 7.4 Acceptance（验收）
 

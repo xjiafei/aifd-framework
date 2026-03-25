@@ -72,7 +72,7 @@
 | `docs/architecture.md` | 架构规范（4条核心原则 + 技术栈分层映射） |
 | `docs/quality.md` | 质量标准 |
 | `docs/specs/index.md` | 功能目录索引（活跃功能 + 已归档功能） |
-| `docs/specs/{feature}/` | 功能规格说明（按功能建子目录） |
+| `docs/specs/{feature}/` | 功能规格说明（requirement/product/tech/test-plan/test-cases/review-log/test-report/test-result.json） |
 | `docs/plans/active/` | 当前活跃的执行计划 |
 | `docs/knowledges/index.md` | **知识库总索引（所有知识文件在此登记）** |
 | `docs/knowledges/` | 知识库（domain/architecture/patterns/standards/lessons-learned/guides） |
@@ -80,7 +80,7 @@
 | `workflows/full-lifecycle.md` | 完整生命周期工作流（含 Hotfix 路径、DYNAMIC_INJECT 协议） |
 | `workspace/stage-status.json` | 流水线运行状态（v2 格式，含 metrics / archived / legacyPaths） |
 | `workspace/memory.md` | 项目记忆（结构化：ADL / 经验教训 / 活跃约束 / 状态快照） |
-| `workspace/code-review-log.md` | Code Review 问题清单（OPEN/RESOLVED 状态管理） |
+| `workspace/cr-index.md` | CR/Bug 全局计数索引（各功能 OPEN 问题数，/health-check 统计用；详情在 docs/specs/{feature}/review-log.md） |
 | `workspace/framework-health.md` | 框架自检记录（每 3 功能一次，/health-check 自动生成） |
 
 ---

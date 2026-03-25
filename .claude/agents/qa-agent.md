@@ -80,10 +80,10 @@ allowed-tools: [Read, Write, Edit, Bash, Grep, Glob]
 
 | 级别 | 产出物 | 格式 |
 |------|--------|------|
-| 必须 | 测试执行报告 | 每条用例的执行结果（PASS / FAIL / BLOCKED / SKIPPED） |
-| 必须 | 缺陷列表 | FAIL 用例对应的缺陷描述、复现步骤、严重级别 |
-| 必须 | 覆盖矩阵 | 需求/功能点 vs 测试用例的覆盖状态 |
-| 推荐 | 测试覆盖率 | 代码覆盖率数据（如工具支持） |
+| 必须 | 测试报告（覆盖矩阵 + Bug 清单） | `docs/specs/{feature}/test-report.md`（每轮追加，标注 Round N） |
+| 必须 | 测试结论 JSON | `docs/specs/{feature}/test-result.json` |
+| 必须 | 缺陷列表 | FAIL 用例对应的缺陷描述、复现步骤、严重级别（P0 Bug 写入 test-result.json，P1/P2 Bug 追加到 `docs/specs/{feature}/review-log.md` 标注来源为 testing） |
+| 推荐 | 测试覆盖率 | 代码覆盖率数据（如工具支持），附在 test-report.md 末尾 |
 | 可选 | 测试环境信息 | 执行时的环境快照 |
 
 #### 执行步骤
@@ -182,4 +182,4 @@ allowed-tools: [Read, Write, Edit, Bash, Grep, Glob]
 | "这个场景太边缘了不需要测试" | 边缘场景是生产事故的主要来源 |
 | "手动测试过了就行" | 手动测试不可重复，下次回归时无法验证 |
 | "测试环境不支持这个场景" | 记录为 blocked 并说明原因，不要标记为 pass |
-| "P1 bug 不影响发布" | P1 bug 必须记录到 code-review-log.md，不可忽略 |
+| "P1 bug 不影响发布" | P1 bug 必须记录到 `docs/specs/{feature}/review-log.md`（标注来源 testing），不可忽略 |

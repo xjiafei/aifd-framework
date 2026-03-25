@@ -96,15 +96,15 @@ case "$STAGE" in
 
   implementation)
     echo "检查 P4 实现阶段产出物..."
-    check_file "CR 日志 code-review-log.md"   "workspace/code-review-log.md"
-    check_file "测试覆盖矩阵 test-coverage-matrix.md" "workspace/test-coverage-matrix.md"
-    check_file "测试结果 test-result.json"    "workspace/test-result.json"
+    check_file "CR 日志 review-log.md"          "$SPEC_DIR/review-log.md"
+    check_file "测试报告 test-report.md"         "$SPEC_DIR/test-report.md"
+    check_file "测试结果 test-result.json"       "$SPEC_DIR/test-result.json"
     ;;
 
   testing)
     echo "检查测试阶段产出物..."
-    check_file "测试结果 test-result.json"    "workspace/test-result.json"
-    check_file "测试覆盖矩阵 test-coverage-matrix.md" "workspace/test-coverage-matrix.md"
+    check_file "测试结果 test-result.json"       "$SPEC_DIR/test-result.json"
+    check_file "测试报告 test-report.md"         "$SPEC_DIR/test-report.md"
     ;;
 
   gc)

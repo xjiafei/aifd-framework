@@ -142,6 +142,10 @@ allowed-tools: [Read, Grep, Glob, Bash]
 
    > **重要**：`APPROVED_WITH_HIGH` 不等于可以继续，必须等编排者对所有 HIGH 问题做出决策后才能进入 4.3 Testing。
 
+9. **写入 CR 日志**
+   - 将所有问题（含 MEDIUM/LOW）写入 `docs/specs/{feature}/review-log.md`（OPEN 状态）
+   - 格式：`### [OPEN|RESOLVED] [级别] 标题` + 位置/描述/建议/处理方式字段
+
 ---
 
 ## 质量检查清单
