@@ -69,7 +69,7 @@
   - `.claude/hooks/post-stage-check.sh` — 阶段完成后验证产出物完整性
   - `.claude/agents/devops-agent.md` — DevOps/部署 Agent（Dockerfile、docker-compose、CI/CD、部署文档）
   - `.claude/agents/agent-evolution-policy.md` — 框架自演进策略独立文件（从 CLAUDE.md §7 提取并详细化）
-  - `templates/tech-revision.md` — 技术方案迭代记录模板
+  - `docs/templates/tech-revision.md` — 技术方案迭代记录模板
 - **修改文件**：
   - `CLAUDE.md §3 仓库导航` — 注册以上所有新文件
   - `CLAUDE.md §7 框架自演进` — 改为引用 agent-evolution-policy.md

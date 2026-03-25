@@ -76,7 +76,7 @@
 | `docs/plans/active/` | 当前活跃的执行计划 |
 | `docs/knowledges/index.md` | **知识库总索引（所有知识文件在此登记）** |
 | `docs/knowledges/` | 知识库（domain/architecture/patterns/standards/lessons-learned/guides） |
-| `templates/` | 产物模板（含 tech-revision.md 技术方案迭代记录模板） |
+| `docs/templates/` | 产物模板（含 tech-revision.md 技术方案迭代记录模板） |
 | `workflows/full-lifecycle.md` | 完整生命周期工作流（含 Hotfix 路径、DYNAMIC_INJECT 协议） |
 | `workspace/stage-status.json` | 流水线运行状态（v2 格式，含 metrics / archived / legacyPaths） |
 | `workspace/memory.md` | 项目记忆（结构化：ADL / 经验教训 / 活跃约束 / 状态快照） |
@@ -157,7 +157,7 @@
 **可自由修改：**
 - agent 执行清单中的具体步骤（`.claude/agents/`）
 - `docs/knowledges/` 中的知识条目
-- `templates/` 中的模板改进
+- `docs/templates/` 中的模板改进
 - `.claude/hooks/` 检查条件和错误提示
 
 **谨慎修改（需在 memory.md 记录理由）：**

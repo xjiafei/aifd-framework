@@ -35,7 +35,7 @@ disable-model-invocation: true
    - 目标用户是谁？
    - 必须有 vs 最好有 的功能边界？
 2. 读取 `.claude/agents/pm-agent.md`，以 pm-agent 模式 A 的角色执行需求分析
-3. 复制 `templates/requirement.md` 到 `docs/specs/{feature}/requirement.md`，填写所有章节
+3. 复制 `docs/templates/requirement.md` 到 `docs/specs/{feature}/requirement.md`，填写所有章节
 4. 确保每个用户故事有可测试的 AC，开放问题为空
 5. 更新 `workspace/stage-status.json`：stage=requirement, status=running
 
@@ -55,7 +55,7 @@ disable-model-invocation: true
 
 1. 读取 `docs/specs/{feature}/requirement.md`
 2. 以 pm-agent 模式 B 执行产品设计
-3. 复制 `templates/product.md` 到 `docs/specs/{feature}/product.md`，填写所有章节
+3. 复制 `docs/templates/product.md` 到 `docs/specs/{feature}/product.md`，填写所有章节
 4. 更新 traces_to 双向链接
 
 ### P2 门禁审查
@@ -74,9 +74,9 @@ disable-model-invocation: true
 1. 读取 `docs/specs/{feature}/product.md` + `docs/architecture.md`
 2. 以 arch-agent 模式 A 执行技术设计，同时以 qa-agent 模式 A 编写测试计划（可并行）
 3. 产出：
-   - `docs/specs/{feature}/tech.md`（使用 `templates/tech-design.md`）
-   - `docs/specs/{feature}/test-plan.md`（使用 `templates/test-plan.md`）
-   - `docs/plans/active/{feature}.md`（使用 `templates/exec-plan.md`）
+   - `docs/specs/{feature}/tech.md`（使用 `docs/templates/tech-design.md`）
+   - `docs/specs/{feature}/test-plan.md`（使用 `docs/templates/test-plan.md`）
+   - `docs/plans/active/{feature}.md`（使用 `docs/templates/exec-plan.md`）
 4. 更新所有 traces_to 链接
 
 ### P3 门禁审查

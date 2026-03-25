@@ -202,7 +202,7 @@ Read .claude/agents/xxx-agent.md → 获取 agent 完整指令
 1. 读取 `docs/knowledges/index.md`，按业务领域关键词匹配相关条目
 2. 对匹配的条目，读取文件内容（重点：domain/ 和 lessons-learned/）
 3. 读取 `workspace/memory.md` — 了解项目当前状态和已有决策
-4. **教训应用检查**：如匹配到的 lessons-learned 条目含"模板改进建议"或"规则改进建议"字样，先检查 `templates/` 或 `.claude/rules/` 是否已响应更新。**未更新则在继续流程之前完成更新**，确保教训在本轮生效。
+4. **教训应用检查**：如匹配到的 lessons-learned 条目含"模板改进建议"或"规则改进建议"字样，先检查 `docs/templates/` 或 `.claude/rules/` 是否已响应更新。**未更新则在继续流程之前完成更新**，确保教训在本轮生效。
 5. 在后续输出中注明参考了哪些知识条目（增加可追溯性）
 
 > 若 docs/knowledges/index.md 不存在，说明项目初始化未完成，执行 `/init-project` 后再继续。
@@ -227,7 +227,7 @@ PM Agent 执行需求分析，产出结构化需求文档。
 ### 4.4 输出物
 
 - 文件路径：`docs/specs/{feature-name}/requirement.md`
-- 使用模板：`templates/requirement.md`
+- 使用模板：`docs/templates/requirement.md`
 - 内容须包含：用户故事、验收标准(AC)、数据域定义、非功能性需求、traces_to 链接
 
 ### 4.5 Gate 评审
@@ -595,10 +595,10 @@ feature_name: {feature-name}
 
 沉淀完成后，如本次 lessons-learned 包含模板改进或规则改进建议，必须在**同一 P5 步骤内**完成以下操作：
 
-1. 在 `templates/` 或 `.claude/rules/` 中完成对应更新（不可延迟到"下次"）
+1. 在 `docs/templates/` 或 `.claude/rules/` 中完成对应更新（不可延迟到"下次"）
 2. 在 lessons-learned 文件末尾追加 `applied_to` 字段，例如：
    ```
-   applied_to: templates/requirement.md（已更新 FR-### 编号规范）
+   applied_to: docs/templates/requirement.md（已更新 FR-### 编号规范）
    ```
 3. 若暂时无法确定改进方案，标记 `applied_to: PENDING — 原因：{说明}`，但不可省略此字段
 
@@ -609,7 +609,7 @@ feature_name: {feature-name}
 每完成 3 个功能后，执行框架健康检查：
 
 1. **CLAUDE.md 导航有效性** — 所有链接是否指向存在的文件？
-2. **模板改进需求** — `templates/` 中的模板是否需要根据实践经验更新？
+2. **模板改进需求** — `docs/templates/` 中的模板是否需要根据实践经验更新？
 3. **新文件注册** — 本次新增的重要文件是否已在 CLAUDE.md 中注册？
 
 自检结果记录到 `workspace/framework-health.md`。发现问题直接修复（更新 CLAUDE.md / templates 等）。

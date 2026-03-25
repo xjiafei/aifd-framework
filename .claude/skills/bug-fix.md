@@ -31,7 +31,7 @@ disable-model-invocation: true
 0. 读取 docs/knowledges/lessons-learned/（如存在）— 检查是否有类似问题的历史修复经验
 1. 以 arch-agent 模式 A 分析 Bug 根因
 2. 产出简化版技术设计：
-   - `docs/plans/active/{bug-id}.md`（使用 `templates/exec-plan.md`）
+   - `docs/plans/active/{bug-id}.md`（使用 `docs/templates/exec-plan.md`）
    - 包含：根因分析、修复方案、受影响文件、验证命令
 3. 不需要完整的 tech.md，exec-plan 中写清修复方案即可
 

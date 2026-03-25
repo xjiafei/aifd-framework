@@ -22,7 +22,7 @@ description: "框架自演进策略文档（仅供参考，不作为调用 agent
 | `.claude/skills/*.md` | 工作流步骤的顺序和细节、检查条件 | 优化 close-loop 的重试逻辑 |
 | `.claude/hooks/*.sh` | 检查路径、检查条件、错误提示文案 | 扩展 pre-implementation-check 的检查项 |
 | `docs/knowledges/` | 添加新知识条目、更新已有条目 | 沉淀新的经验教训 |
-| `templates/` | 模板字段、格式、示例内容 | 根据实践改进 requirement.md 模板 |
+| `docs/templates/` | 模板字段、格式、示例内容 | 根据实践改进 requirement.md 模板 |
 | `workspace/memory.md` | 新增决策记录、更新项目状态 | 记录架构决策 |
 
 ### 谨慎修改（需说明理由）
@@ -58,11 +58,11 @@ description: "框架自演进策略文档（仅供参考，不作为调用 agent
 
 | 时机 | 说明 | 可演进的内容 |
 |------|------|------------|
-| **P5 GC 完成后** | 每次功能交付都是积累经验的机会 | templates/、knowledge/、agent 执行清单 |
+| **P5 GC 完成后** | 每次功能交付都是积累经验的机会 | docs/templates/、knowledge/、agent 执行清单 |
 | **发现重复问题** | 同一类问题出现 2 次以上 | hooks 检查条件、agent 质量清单 |
 | **agent 执行失败** | agent 在某步骤反复出错或产出质量差 | 该 agent 的执行步骤和质量标准 |
 | **/health-check 发现问题** | 框架健康检查指出某个模式需要改进 | 对应组件 |
-| **lessons-learned 新增条目** | 新教训需要在框架中"固化"，防止复发 | 相关 templates/ 或 .claude/rules/ |
+| **lessons-learned 新增条目** | 新教训需要在框架中"固化"，防止复发 | 相关 docs/templates/ 或 .claude/rules/ |
 
 **不应触发自演进的情况**：
 - 临时性、项目特定的一次性调整（应记录在 memory.md，不改 agent）

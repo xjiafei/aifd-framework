@@ -51,17 +51,17 @@ aifd-framework/
 ├── workflows/
 │   └── full-lifecycle.md            # 完整生命周期参考文档（Triage、P1-P5 详细规程）
 │
-├── templates/                       # 产物模板（各阶段文档的标准结构）
-│   ├── requirement.md               # 需求文档模板
-│   ├── product.md                   # 产品设计模板
-│   ├── tech-design.md               # 技术设计模板
-│   ├── exec-plan.md                 # 执行计划模板
-│   ├── test-plan.md                 # 测试计划模板
-│   └── test-cases.md                # 测试用例模板
-│
 ├── docs/
 │   ├── architecture.md              # 架构规范（框架原则 + 项目定制区，由 /init-project 填写）
 │   ├── quality.md                   # 质量标准
+│   ├── templates/                   # 产物模板（各阶段文档的标准结构）
+│   │   ├── requirement.md           # 需求文档模板
+│   │   ├── product.md               # 产品设计模板
+│   │   ├── tech-design.md           # 技术设计模板
+│   │   ├── tech-revision.md         # 技术方案迭代记录模板
+│   │   ├── exec-plan.md             # 执行计划模板
+│   │   ├── test-plan.md             # 测试计划模板
+│   │   └── test-cases.md            # 测试用例模板
 │   ├── specs/
 │   │   ├── index.md                 # 功能目录索引（活跃功能 + 已归档功能）
 │   │   └── {feature}/               # 各功能的规格文档（由各阶段 Agent 产出）
@@ -129,31 +129,69 @@ cd my-project-aifd
 
 ---
 
-### 场景 B：已有项目接入
+### 场景 B：已有项目接入（含多 git 仓库）
 
-**第 1 步：克隆框架到项目旁**
+**核心思路**：AIFD 框架本身作为独立的"编排仓库"，Claude Code 在此仓库中运行，通过相对路径访问和修改业务仓库的代码。
 
-```bash
-git clone <aifd-framework-url> my-project-aifd
-cd my-project-aifd
+**目录结构**（以前后端分离、各自独立 git 仓库为例）：
+
+```
+workspace/                           # 本地工作目录（不是 git 仓库）
+├── my-project-aifd/                 ← AIFD 编排仓库（Claude Code 的工作目录）
+│   ├── CLAUDE.md
+│   ├── .claude/
+│   ├── docs/                        ← 所有设计文档、规格、知识库在此沉淀
+│   └── workspace/
+│
+├── backend/                         ← 后端业务仓库（独立 git 仓库）
+│   ├── src/
+│   └── ...
+│
+├── frontend-web/                    ← Web 前端仓库（独立 git 仓库）
+│   ├── src/
+│   └── ...
+│
+└── mobile-app/                      ← 移动端仓库（独立 git 仓库，如有）
+    ├── src/
+    └── ...
 ```
 
-**第 2 步：运行初始化向导（含存量模式）**
+**第 1 步：克隆框架和各业务仓库**
+
+```bash
+mkdir workspace && cd workspace
+git clone <aifd-framework-url> my-project-aifd
+git clone <backend-url> backend
+git clone <frontend-url> frontend-web
+# 如有更多仓库按此格式并列克隆
+```
+
+**第 2 步：在编排仓库中打开 Claude Code**
+
+```bash
+cd my-project-aifd
+# 此处启动 Claude Code，所有 Agent 和 Hook 均以此目录为根
+```
+
+**第 3 步：运行初始化向导（含存量模式）**
 
 ```
 /init-project
 ```
 
 向导识别到存量项目后会额外执行：
-- 扫描现有代码结构，生成"现状报告"
-- 配置 `legacyPaths`（遗留代码路径豁免，这些路径不受 Hook 拦截）
+- 录入各业务仓库的相对路径（如 `../backend`, `../frontend-web`）
+- 配置 `CLAUDE.md §8` 中的代码仓库路径表
+- 配置 `legacyPaths`（遗留代码路径豁免，存量代码不受 Hook 拦截）
 - 为核心模块创建简化版 `tech.md`（作为追溯起点）
 
-**第 3 步：从任意阶段切入**
+**第 4 步：从任意阶段切入**
 
 - 已有架构但需要新功能 → `/new-feature`
 - 存在 Bug 需要修复 → `/bug-fix`
 - 技术设计已完成，直接开始编码 → `/close-loop`
+
+> **注意**：Claude Code 可以通过相对路径（`../backend/src/...`）读写业务仓库的文件。各业务仓库保持独立，各自管理 git 历史和 CI/CD，编排仓库只负责流程协调和文档沉淀。
 
 ---
 
@@ -234,26 +272,44 @@ cd my-project-aifd
 
 ## 多仓库支持
 
-AIFD 支持**编排仓库 + 业务子仓库**模式：
+AIFD 支持**编排仓库 + 并列业务仓库**模式（推荐）和**编排仓库内嵌子目录**模式。
+
+### 推荐：并列放置（各仓库独立）
 
 ```
-orchestration-repo/          # 编排仓库（框架 + 文档 + 工作空间）
+workspace/                   # 本地工作目录
+├── my-project-aifd/         # 编排仓库（Claude Code 工作目录）
+├── backend/                 # 后端仓库（独立 git）
+├── frontend-web/            # Web 前端仓库（独立 git）
+└── mobile-app/              # 移动端仓库（独立 git，如有）
+```
+
+Claude Code 通过相对路径 `../backend/src/...` 访问业务代码。适合大多数团队，各业务仓库 CI/CD 完全独立。
+
+### 备选：子目录内嵌（方便整体管理）
+
+```
+my-project-aifd/             # 编排仓库（Claude Code 工作目录）
 ├── CLAUDE.md
 ├── .claude/
 ├── docs/
 ├── workspace/
-└── repos/                   # 业务子仓库（通过相对路径引用）
+└── repos/                   # 通过 git submodule 或直接克隆
     ├── backend/
-    ├── frontend/
+    ├── frontend-web/
     └── shared/
 ```
 
-**规则**：编排仓库是唯一的事实源；子仓库保持独立性（各有自己的 CLAUDE.md 和构建脚本）；接口契约在技术设计阶段前置确定。
+适合需要一键克隆整个项目的场景，但各子仓库 git 操作需在对应子目录内执行。
 
-## 参考来源
+### 编排规则
 
-1. OpenAI "Harness Engineering" (2026-02) — Agent 工程化协作理念
-2. 李琼羽《Harness Engineering 视角下的代码熵管理》(2026-03) — 代码熵控制和工程实践
+| 原则 | 说明 |
+|------|------|
+| 单源事实 | 所有设计文档、决策记录、追溯链路只在编排仓库维护 |
+| 仓库独立 | 各业务仓库保持独立 git 历史，不在编排仓库中提交业务代码 |
+| 接口前置 | 跨仓库接口契约在 P3 技术设计阶段确定，作为各仓库开发的输入 |
+| 路径配置 | `CLAUDE.md §8` 代码仓库路径表中登记所有业务仓库的相对路径 |
 
 ## License
 
