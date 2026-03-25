@@ -2,22 +2,22 @@
 
 ## 文件结构
 
-两种格式，推荐文件夹格式：
+**只支持文件夹格式**，单文件 `.md` 不被识别（不会出现在 /skills 列表）：
 
 ```
-# 单文件格式（简单 skill）
-.claude/skills/skill-name.md
-
-# 文件夹格式（推荐，支持多文件组织）
+# ✅ 唯一支持的格式
 .claude/skills/skill-name/
-├── SKILL.md              ← 必须大写，大小写敏感
-├── references/           ← 详细参考文档
-├── scripts/              ← 辅助脚本
-├── assets/               ← 模板、示例文件
-└── examples/             ← 预期输出示例
+├── SKILL.md              ← 必须大写，大小写敏感（必须）
+├── references/           ← 详细参考文档（可选）
+├── scripts/              ← 辅助脚本（可选）
+├── assets/               ← 模板、示例文件（可选）
+└── examples/             ← 预期输出示例（可选）
+
+# ❌ 不支持（不会显示在 /skills 列表）
+.claude/skills/skill-name.md
 ```
 
-> **重要**：文件夹格式时主文件必须命名为 `SKILL.md`（全大写），名称大小写敏感。
+> **重要**：主文件必须命名为 `SKILL.md`（全大写），名称大小写敏感。
 
 ---
 
