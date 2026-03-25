@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "command": "bash .claude/hooks/check-coding-gate.sh \"$CLAUDE_TOOL_INPUT_FILE_PATH\""
+      }
+    ]
+  }
+}

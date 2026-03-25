@@ -1,0 +1,36 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Node
+node_modules/
+
+# Java
+target/
+*.class
+*.jar
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Playwright MCP logs
+.playwright-mcp/
+
+# Temporary files
+temp/
+
+# Claude Code auto-memory (project-level)
+# .claude/projects/ is user-level, not committed
+
+# Sub-repositories (when not using git submodules)
+# Uncomment and customize when applying to a project:
+# backend/*/
+# frontend/*/

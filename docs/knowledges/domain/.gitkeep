@@ -1,0 +1,6 @@
+# domain/ — 业务领域知识
+#
+# 存放内容：领域规则、业务约束、术语表、领域模型说明
+# 命名规范：{NNN}-{topic}.md（如 001-order-domain.md）
+# 填充时机：P1 需求分析发现新领域概念时，由 pm-agent 沉淀；P5 GC 知识归档时补充
+# 引用方式：在 docs/knowledges/index.md 中登记后，P1/P3 上下文加载时自动匹配

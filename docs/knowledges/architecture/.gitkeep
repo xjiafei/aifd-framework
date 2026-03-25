@@ -1,0 +1,6 @@
+# architecture/ — 架构决策记录（ADR）
+#
+# 存放内容：重大技术选型的决策过程、Trade-off 分析、已确定架构约束
+# 命名规范：ADR-{NNN}-{topic}.md（如 ADR-001-use-event-sourcing.md）
+# 填充时机：P3 技术设计做出重大架构决策时，由 arch-agent 沉淀
+# 价值：避免在后续功能中重复讨论已决事项，降低架构熵

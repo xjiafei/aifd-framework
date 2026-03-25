@@ -1,0 +1,6 @@
+# patterns/ — 可复用代码模式
+#
+# 存放内容：项目中经过验证、值得复用的设计模式和实现模式
+# 命名规范：{NNN}-{pattern-name}.md（如 001-repository-pattern.md）
+# 填充时机：P5 GC 阶段，dev-agent 认为本次实现中有值得提取的模式时沉淀
+# 使用方式：P4 Coding 时，dev-agent 在 §7.0 上下文加载中读取并复用

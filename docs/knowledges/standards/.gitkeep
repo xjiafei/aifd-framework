@@ -1,0 +1,6 @@
+# standards/ — 编码规范
+#
+# 存放内容：语言/框架特定的编码规范、代码风格约定、API 设计规范
+# 命名规范：{tech}-standards.md（如 java-backend.md、vue-frontend.md）
+# 填充时机：/init-project 时从 examples/ 复制或手动创建；后续通过经验教训迭代更新
+# 关联：docs/knowledges/index.md 登记后，reviewer-agent 在代码审查时引用

@@ -1,0 +1,7 @@
+{
+  "features": {},
+  "projectName": "",
+  "lastUpdated": "",
+  "_schema": "v2-multi-feature",
+  "_note": "支持多功能并行开发。每个功能作为 features 的一个键。features[name].status 为 running+implementation 时允许编写代码。"
+}
