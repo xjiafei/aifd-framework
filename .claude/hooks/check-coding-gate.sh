@@ -103,6 +103,51 @@ PYEOF
 )
 
 if [[ "$RESULT" == ok:* ]]; then
+  # 可选：检查当前是否在正确的特性分支上（仅 WARNING，不阻塞）
+  ACTIVE_FEATURES="${RESULT#ok:}"
+  BRANCH_CHECK=$(python3 - "$STATUS_FILE" "$FILE" "$ACTIVE_FEATURES" 2>/dev/null << 'PYEOF'
+import json, sys, os
+
+try:
+    with open(sys.argv[1]) as f:
+        d = json.load(f)
+    file_path = sys.argv[2]
+    feature_name = sys.argv[3].split(",")[0]
+
+    feature = d.get("features", {}).get(feature_name, {})
+    repos = feature.get("repos", [])
+
+    if not repos:
+        print("skip")
+        sys.exit(0)
+
+    # 找到文件所属的仓库
+    for repo in repos:
+        repo_path = repo.get("path", "").rstrip("/")
+        if repo_path and file_path.startswith(repo_path):
+            expected_branch = repo.get("featureBranch", "")
+            if expected_branch and repo.get("branchCreated", False):
+                abs_path = os.path.abspath(repo_path)
+                print(f"check:{abs_path}:{expected_branch}")
+            else:
+                print("skip")
+            sys.exit(0)
+
+    print("skip")
+except Exception:
+    print("skip")
+PYEOF
+)
+
+  if [[ "$BRANCH_CHECK" == check:* ]]; then
+    IFS=':' read -r _ REPO_PATH EXPECTED_BRANCH <<< "$BRANCH_CHECK"
+    CURRENT_BRANCH=$(cd "$REPO_PATH" 2>/dev/null && git branch --show-current 2>/dev/null)
+    if [ -n "$CURRENT_BRANCH" ] && [ "$CURRENT_BRANCH" != "$EXPECTED_BRANCH" ]; then
+      echo "WARNING: 仓库 ($REPO_PATH) 当前在分支 '$CURRENT_BRANCH'，期望在 '$EXPECTED_BRANCH'。" >&2
+      echo "建议切换：cd $REPO_PATH && git checkout $EXPECTED_BRANCH" >&2
+    fi
+  fi
+
   exit 0
 elif [[ "$RESULT" == blocked:* ]]; then
   INFO="${RESULT#blocked:}"

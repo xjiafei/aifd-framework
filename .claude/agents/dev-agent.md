@@ -57,6 +57,14 @@ allowed-tools: [Read, Write, Edit, Bash, Grep, Glob]
    - 使用 `Read` 阅读相关模块的 `CLAUDE.md`
    - 明确当前里程碑的范围和完成标准
 
+1.5. **确认分支状态**（仅当编排者注入了 repos 信息时）
+   - 对每个涉及当前里程碑修改的仓库：
+     a. `cd {repo-path}` → `git branch --show-current`
+     b. 期望在 `feature/{feature-name}` 分支上
+     c. 如果不在正确分支 → `git checkout feature/{feature-name}`
+     d. 切换失败 → 在实现说明中标注 WARNING
+   - 如果编排者未注入 repos 信息，跳过此步骤
+
 2. **分析现有代码**
    - 使用 `Glob` / `Grep` / `Read` 了解项目结构和已有代码
    - 识别需要修改或扩展的文件
@@ -77,6 +85,14 @@ allowed-tools: [Read, Write, Edit, Bash, Grep, Glob]
 6. **运行测试**
    - 使用 `Bash` 执行测试命令
    - 确认所有测试通过
+
+6.5. **更新执行计划并提交代码**
+   - 使用 `Edit` 标记当前里程碑复选框为 `[x]`
+   - 在执行计划 Progress Log 表追加一行：`| {今日日期} | M{NNN} | done | {简要说明实现内容} |`
+   - 此步骤为 R7（状态可见）要求，里程碑未在计划中标记 = 未完成
+   - **Git commit**（对每个涉及修改的仓库分别执行）：
+     `cd {repo-path} && git add -A && git commit -m "M{NNN}: {description}"`
+     如仅有单仓库或无 repos 配置，在当前目录执行 commit
 
 7. **自检**
    - 对照质量检查清单逐项确认
@@ -103,6 +119,7 @@ allowed-tools: [Read, Write, Edit, Bash, Grep, Glob]
 - [ ] 错误处理完整，无裸露的异常
 - [ ] 日志输出适当（关键操作有日志，无敏感信息泄露）
 - [ ] 偏离技术设计的部分已明确标注
+- [ ] 执行计划里程碑已标记 `[x]`，Progress Log 已更新
 
 ---
 

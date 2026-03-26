@@ -111,6 +111,42 @@ case "$STAGE" in
     echo "检查 P5 收尾产出物..."
     check_file "功能索引 docs/specs/index.md" "docs/specs/index.md"
     check_file "架构文档 docs/architecture.md" "docs/architecture.md"
+    check_file "CR 索引 workspace/cr-index.md" "workspace/cr-index.md"
+
+    # 验证功能已登记到 specs/index.md（不仅仅文件存在）
+    if ! grep -q "$FEATURE" docs/specs/index.md 2>/dev/null; then
+      WARNINGS+=("⚠️  功能 '$FEATURE' 未登记到 docs/specs/index.md")
+      FAILED=1
+    else
+      echo "  ✅ 功能已登记到 specs/index.md"
+    fi
+
+    # 验证 cr-index.md 包含本功能条目（非示例数据）
+    if ! grep -q "$FEATURE" workspace/cr-index.md 2>/dev/null; then
+      WARNINGS+=("⚠️  功能 '$FEATURE' 未登记到 workspace/cr-index.md")
+      FAILED=1
+    else
+      echo "  ✅ 功能已登记到 cr-index.md"
+    fi
+
+    # 验证执行计划已移至 completed/
+    if [ -f "docs/plans/active/$FEATURE.md" ]; then
+      WARNINGS+=("⚠️  执行计划仍在 active/: docs/plans/active/$FEATURE.md（应已移至 completed/）")
+      FAILED=1
+    fi
+    if [ ! -f "docs/plans/completed/$FEATURE.md" ]; then
+      WARNINGS+=("⚠️  执行计划未找到: docs/plans/completed/$FEATURE.md")
+      FAILED=1
+    else
+      echo "  ✅ 执行计划已归档到 completed/"
+      # 验证执行计划 status 不是 active
+      if grep -q "| status | active |" "docs/plans/completed/$FEATURE.md" 2>/dev/null; then
+        WARNINGS+=("⚠️  执行计划 status 仍为 'active'（应改为 'completed'）")
+        FAILED=1
+      else
+        echo "  ✅ 执行计划 status 已更新"
+      fi
+    fi
     ;;
 
   *)

@@ -137,9 +137,9 @@ name: CI/CD
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, 'feature/**']
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 jobs:
   build-and-test:
@@ -154,6 +154,57 @@ jobs:
     needs: docker-build
     if: github.ref == 'refs/heads/main'
 ```
+
+**分支触发说明**：
+- `feature/**` 分支的 push 触发构建和测试（不部署），确保特性分支代码质量
+- PR 到 main/develop 时触发完整检查（包括 E2E）
+- 仅 main 分支合并后触发部署
+- 如项目不使用特性分支（CLAUDE.md §8 未配置仓库），可去掉 `feature/**` 行
+
+### E2E 测试阶段（CI/CD）
+
+在 CI/CD 流水线中，如果项目包含 `testing/e2e/` 目录，需要在 build-and-test 之后、部署之前增加 E2E 测试阶段：
+
+```yaml
+  e2e-test:
+    needs: build-and-test
+    if: hashFiles('testing/e2e/**/*.spec.ts') != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+      - name: Start backend
+        run: |
+          # 替换为项目实际的后端启动命令
+          {backend_start_cmd} &
+          for i in $(seq 1 30); do
+            curl -sf {backend_health_url} && break || sleep 4
+          done
+      - name: Start frontend
+        run: |
+          # 替换为项目实际的前端启动命令
+          {frontend_start_cmd} &
+          sleep 10
+      - name: Run E2E tests
+        run: npx playwright test testing/e2e/ --reporter=html
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+```
+
+**关键要求**：
+- E2E 阶段依赖 build-and-test 成功
+- 仅当 testing/e2e/ 目录存在 .spec.ts 文件时执行
+- 必须包含 Playwright 安装步骤（--with-deps 安装浏览器依赖）
+- 后端启动后必须健康检查等待
+- 测试报告必须归档（upload-artifact）
+- 部署阶段需依赖 e2e-test 成功
 
 ### 6. 生成部署文档
 
@@ -176,6 +227,7 @@ jobs:
 - [ ] .env.example 有每个变量的注释说明
 - [ ] docs/deployment.md 包含首次部署和更新部署步骤
 - [ ] CI/CD 覆盖：构建 + 测试 + 镜像构建（+ 部署，如适用）
+- [ ] CI/CD 包含 E2E 测试阶段（如项目有 testing/e2e/ 目录）
 
 ---
 

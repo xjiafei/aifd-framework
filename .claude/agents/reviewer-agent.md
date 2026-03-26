@@ -84,9 +84,14 @@ allowed-tools: [Read, Grep, Glob, Bash]
    - **接口一致性**：实现的接口签名、数据模型是否与 tech.md 中的定义完全一致？
    - **错误处理**：tech.md 定义的错误码和错误场景是否全部实现？
 
+2.5. **反向漂移检测（SPEC_DRIFT）**
+   - 对 tech.md 中的每个接口/端点/数据模型，验证与实际代码实现是否一致
+   - 如实现合理偏离了 tech.md（如设计改进），标记为 MEDIUM，类别为 `SPEC_DRIFT`
+   - SPEC_DRIFT 不算 STAGE1_FAIL，但会在 P4 退出前的"文档漂移修复"步骤中被强制处理
+
 3. **阶段一结论**
    - 有任何遗漏或超范围问题 → `STAGE1_FAIL`，列出所有问题，**停止，不进入阶段二**
-   - 全部通过 → `STAGE1_PASS`，继续阶段二
+   - 全部通过（SPEC_DRIFT 不算 FAIL） → `STAGE1_PASS`，继续阶段二
 
 > **如果阶段一 FAIL**：将问题反馈给 dev-agent 修复，修复后重新执行阶段一。不得绕过。
 

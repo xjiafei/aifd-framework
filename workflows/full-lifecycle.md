@@ -88,6 +88,40 @@
 
 ---
 
+## 2.5 分支生命周期（多仓库场景）
+
+> 本节仅在 CLAUDE.md §8 的"代码仓库路径"表配置了仓库条目时生效。
+> 单仓库或无仓库配置时，分支管理为可选的手动操作。
+
+### 分支创建（P3 审批通过、进入 P4 前）
+
+1. 读取 CLAUDE.md §8 代码仓库路径表，获取所有仓库及其主分支
+2. 读取 exec-plan，分析各里程碑涉及的代码路径，确定哪些仓库会被修改
+3. 仅在涉及修改的仓库中创建特性分支：
+   - 分支名：`feature/{feature-name}`
+   - 基于仓库的主分支创建：`cd {repo-path} && git checkout {default-branch} && git pull && git checkout -b feature/{feature-name}`
+4. 不涉及修改的仓库：不创建分支，不切换分支
+5. 更新 stage-status.json 中该 feature 的 `repos` 数组
+
+### 编码阶段（P4）
+
+- dev-agent 在每个仓库编码前，确认当前在正确的特性分支上
+- git commit 在特性分支上执行；多仓库时在每个涉及修改的仓库分别 commit
+- 如果发现不在正确分支上，先切换到特性分支再编码
+
+### 分支合并提醒（P5 收尾）
+
+- P5 阶段检查 repos 数组中所有 `branchCreated=true && branchMerged=false` 的仓库
+- 输出合并提醒清单（不自动执行合并）：
+  ```
+  以下仓库的特性分支待合并：
+  - {repo-name}: feature/{feature-name} → {default-branch} （路径：{path}）
+  合并命令参考：cd {path} && git checkout {default-branch} && git merge feature/{feature-name}
+  ```
+- 用户确认已合并后，更新 `repos[].branchMerged = true`
+
+---
+
 ## 3. Task Tracking 集成
 
 启动完整生命周期时，创建 Task 链：
@@ -376,17 +410,20 @@ feature_name: {feature-name}
 
 - `docs/specs/{feature-name}/test-plan.md` — 测试计划
   - 包含：测试策略、测试范围、测试环境要求
+  - **必须包含** E2E 测试环境配置表（backend_start_cmd、frontend_url 等）和用例分配策略
 - `docs/specs/{feature-name}/test-cases.md` — 测试用例
   - 包含：每条用例的前置条件、操作步骤、预期结果、优先级(P0/P1/P2)
+  - **E2E 用例须包含**：start_url、e2e_steps（结构化 JSON）、expected_dom_state、执行策略（Prong A/B）
 
 ### 6.4 Gate 评审
 
-**第一步：自动预检（precheck-agent，并行运行三个文档）**
+**第一步：自动预检（precheck-agent，并行运行四个文档）**
 
 ```
-文档1: doc_path=docs/specs/{feature-name}/tech.md,       doc_type=tech
-文档2: doc_path=docs/plans/active/{feature-name}.md,     doc_type=exec-plan
-文档3: doc_path=docs/specs/{feature-name}/test-plan.md,  doc_type=test-plan
+文档1: doc_path=docs/specs/{feature-name}/tech.md,        doc_type=tech
+文档2: doc_path=docs/plans/active/{feature-name}.md,      doc_type=exec-plan
+文档3: doc_path=docs/specs/{feature-name}/test-plan.md,   doc_type=test-plan
+文档4: doc_path=docs/specs/{feature-name}/test-cases.md,  doc_type=test-cases
 ```
 任一文档预检 FAIL（CRITICAL 问题）→ 修复后重新预检该文档。全部 PASS/WARN → 进入领域评审。
 
@@ -400,11 +437,19 @@ feature_name: {feature-name}
 | QA评审 | qa-agent | 模式 D | 测试用例覆盖率、与 AC 的对应关系 |
 
 **评审重点：**
+
+*技术设计维度（dev-agent 重点）：*
 1. 层级合规性 — 是否遵循 `architecture.md` 中的分层约束？
 2. 依赖方向 — 是否存在反向依赖或循环依赖？
 3. API 可实现性 — 接口定义是否足够清晰，开发可直接编码？
 4. 里程碑粒度 — 每个里程碑是否足够小（可在单次迭代中完成）？
 5. 构建命令 — 是否明确指定了构建和验证命令？
+
+*测试维度（qa-agent 重点）：*
+6. AC 覆盖完整性 — test-cases.md 中每个 AC 是否都有对应测试用例？有无 AC 被遗漏？
+7. P0 用例充分性 — 核心功能路径是否全部覆盖为 P0？P0 用例数量与 AC 数量是否匹配？
+8. 测试可执行性 — 每条用例的前置条件、操作步骤、期望结果是否明确到可直接执行？
+9. 边缘场景覆盖 — 是否有边界值、空输入、异常路径的测试用例（AC-E 系列）？
 
 **评审结果处理：**
 - 存在 **CRITICAL** 问题 → 修复后重新评审
@@ -430,12 +475,28 @@ feature_name: {feature-name}
 - 某 FR-### 有 tech 设计但无对应里程碑 → **HIGH**，必须修复
 - 某里程碑无对应 FR-### 来源 → **MEDIUM**，记录并说明必要性
 
+**测试覆盖链检查：AC → test-plan → test-cases**
+
+```
+检查矩阵：
+| AC 编号 | test-plan 中策略 | test-cases 中用例 | 状态 |
+|---------|-----------------|------------------|------|
+| AC-1    | 单元测试+集成测试  | TC-001, TC-002   | ✅   |
+| AC-2    | 集成测试          | TC-003           | ✅   |
+| AC-E3   | 未提及            | —                | ❌ 覆盖缺口 |
+```
+
+**测试覆盖缺口处理规则：**
+- 某 AC 在 test-cases.md 中无对应测试用例 → **HIGH**，必须修复
+- 某 AC 有测试用例但 test-plan.md 未说明测试策略 → **MEDIUM**，记录
+- 某测试用例无对应 AC 来源 → **MEDIUM**，记录并说明必要性
+
 **术语漂移检测：**
-- 同一概念在 `requirement.md` / `tech.md` / `exec-plan` 中名称不一致 → **MEDIUM**
+- 同一概念在 `requirement.md` / `tech.md` / `exec-plan` / `test-cases.md` 中名称不一致 → **MEDIUM**
 - 修复方式：统一使用 requirement.md 中定义的术语
 
 **一致性检查通过标准：**
-- 无 HIGH 级覆盖缺口
+- 无 HIGH 级覆盖缺口（含设计覆盖链和测试覆盖链）
 - MEDIUM 问题已记录说明（不强制修复）
 
 通过后 → 更新 `stage-status.json: status=waiting_approval` → **等待人工审批**
@@ -465,7 +526,8 @@ feature_name: {feature-name}
    - 编写代码
    - 运行构建命令
    - 验证构建结果
-3. **构建通过** → 更新 `exec-plan` 中该里程碑状态为 `"done"`
+3. **构建通过** → 更新 `exec-plan` 中该里程碑状态为 `[x]`，并在 Progress Log 追加完成记录
+3.5. **Git commit（推荐）**：`git add -A && git commit -m "M{NNN}: {milestone description}"`。提供变更追溯，使 exec-plan 回滚策略可执行
 4. **构建失败** → 修复 → 重试（每个里程碑最多重试 3 次）
 5. 单个里程碑 3 次重试仍失败 → 记录错误，继续下一个里程碑，最终汇总报告
 
@@ -490,36 +552,67 @@ feature_name: {feature-name}
 
 ### 7.3 Testing（qa-agent 模式 B 测试执行）
 
-1. 逐条执行 `test-cases.md` 中的 **所有** 测试用例（P0 不可跳过）
-2. 输出覆盖率矩阵（每条用例必须有执行状态）：
+> 三层递进执行：Tier 1（单元）→ Tier 2（集成/API）→ Tier 3（E2E）。每层 P0 FAIL 即触发 BUG_FIX。
 
-```
-| 用例ID | 描述 | 优先级 | 状态 | 备注 |
-|--------|------|--------|------|------|
-| TC-001 | ...  | P0     | PASS | —    |
-| TC-002 | ...  | P0     | FAIL | 错误信息 |
-| TC-003 | ...  | P0     | BLOCKED | 阻塞原因 |
-```
+#### Tier 1: 单元测试
+1. 使用 `Bash` 执行单元测试命令（来自 CLAUDE.md §8 或 test-plan.md）
+2. P0 FAIL → BUG_FIX restart
 
-3. **测试覆盖完整性门禁（必须通过才能继续）**：
-   - 覆盖矩阵无 `not-executed` / `pending` 的 P0 用例
-   - 所有 P0 用例为 PASS（BLOCKED 需说明原因，不可静默跳过）
-4. **结构化输出（必须持久化，与功能文档一起归档）**：
-   - 将覆盖率矩阵写入 `docs/specs/{feature}/test-report.md`（每轮追加，标注 Round N）
-   - 将测试结论写入 `docs/specs/{feature}/test-result.json`，格式：
-     ```json
-     {
-       "feature": "{feature-name}",
-       "round": 1,
-       "updatedAt": "ISO timestamp",
-       "summary": { "total": 0, "pass": 0, "fail": 0, "blocked": 0 },
-       "verdict": "PASS | FAIL",
-       "p0Bugs": [],
-       "p1p2Bugs": []
-     }
-     ```
-5. **P0 Bug 存在** → 触发 BUG_FIX Restart，+1 轮次
-6. **P1/P2 Bug** → 记录到 `docs/specs/{feature}/review-log.md`（与 CR 日志共用，标注来源为 testing），继续流程
+#### Tier 2: 集成/API 测试
+3. 使用 `Bash` 执行集成测试命令
+4. P0 FAIL → BUG_FIX restart
+
+#### Tier 3: E2E 测试（条件执行）
+5. 仅当 `test-cases.md` 中存在 E2E 用例时执行（无 E2E 用例则跳过）
+6. **服务生命周期**：启动后端 → 健康检查 → 启动前端 → Playwright MCP 验证前端可达
+7. 逐条执行 E2E 用例：
+   - **Prong A（MCP 直接）**：简单流（<= 5 步），qa-agent 使用 Playwright MCP 工具直接验证
+   - **Prong B（生成脚本）**：复杂流（> 5 步），生成 `testing/e2e/{feature}/*.spec.ts` 后用 `npx playwright test` 执行
+8. **服务关停**（TEARDOWN，无条件执行）：停止后端/前端进程 + browser_close
+
+#### 覆盖矩阵与结果
+
+9. 输出覆盖率矩阵（每条用例必须有执行状态，含三层）：
+
+| 用例ID | 描述 | 测试类型 | 优先级 | 状态 | 执行方式 | 备注 |
+|--------|------|---------|--------|------|---------|------|
+| TC-001 | ...  | unit    | P0     | PASS | bash    | —    |
+| TC-002 | ...  | integration | P0 | PASS | bash    | —    |
+| TC-E-001 | ... | e2e    | P0     | PASS | mcp     | 快照验证 |
+| TC-E-002 | ... | e2e    | P0     | PASS | script  | testing/e2e/feat/TC-E-002.spec.ts |
+
+10. **测试覆盖完整性门禁（必须通过才能继续）**：
+    - 覆盖矩阵无 `not-executed` / `pending` 的 P0 用例（含三层）
+    - 所有 P0 用例为 PASS（BLOCKED 需记录阻塞原因和服务日志摘要）
+11. **结构化输出（必须持久化）**：
+    - 覆盖率矩阵 → `docs/specs/{feature}/test-report.md`（每轮追加，标注 Round N）
+    - 测试结论 → `docs/specs/{feature}/test-result.json`，格式：
+      ```json
+      {
+        "feature": "{feature-name}",
+        "round": 1,
+        "updatedAt": "ISO timestamp",
+        "summary": { "total": 0, "pass": 0, "fail": 0, "blocked": 0 },
+        "tiers": {
+          "unit": { "total": 0, "pass": 0, "fail": 0 },
+          "integration": { "total": 0, "pass": 0, "fail": 0 },
+          "e2e": { "total": 0, "pass": 0, "fail": 0, "blocked": 0 }
+        },
+        "e2eScripts": ["testing/e2e/{feature}/TC-xxx.spec.ts"],
+        "verdict": "PASS | FAIL",
+        "p0Bugs": [],
+        "p1p2Bugs": []
+      }
+      ```
+12. **P0 Bug 存在** → 触发 BUG_FIX Restart，+1 轮次
+13. **P1/P2 Bug** → 记录到 `docs/specs/{feature}/review-log.md`（与 CR 日志共用，标注来源为 testing），继续流程
+
+**BLOCKED_FOLLOWUP**（对每个 BLOCKED 测试用例）：
+1. 在 test-report.md 记录：阻塞原因 + 需要什么条件才能解封
+2. 在 `workspace/memory.md` 区域 C 创建约束条目：
+   `BLOCKED: {TC-ID}（{描述}）— 需要：{解封条件}，手动步骤：{具体操作}`
+3. 如果是手动验收测试：记录具体的手动执行步骤和环境前置条件
+4. BLOCKED 用例不阻止 P4 退出，但**必须登记**以确保后续跟进
 
 ### 7.4 Acceptance（验收）
 
@@ -549,6 +642,8 @@ feature_name: {feature-name}
 - ✅ 测试覆盖矩阵完整，P0 用例全部 PASS（无未执行的 P0 用例）
 - ✅ 技术验收通过（arch-agent 模式B 结论 PASS）
 - ✅ 功能验收通过（pm-agent 模式C 结论 PASS）
+- ✅ 文档漂移已修复：review-log.md 中所有 SPEC_DRIFT 类条目已处理（规格文档已与代码同步）
+- ✅ E2E 测试：P0 E2E 用例全部 PASS（如有），Prong B 脚本已生成并 git commit
 
 **3 轮后仍未满足退出条件：**
 1. **暂停流程**
@@ -562,7 +657,12 @@ feature_name: {feature-name}
 
 ### 8.1 归档执行计划
 
-将 `docs/plans/active/{feature}.md` 移动到 `docs/plans/completed/{feature}.md`。
+**8.1.1** 整理执行计划（归档前必须完成）：
+- 标记所有已完成的里程碑为 `[x]`
+- 填写 Progress Log：为每个已完成里程碑补充实际完成日期和备注
+- 更新 Meta 区域：`status: completed`、`last_updated: {today}`
+
+**8.1.2** 将 `docs/plans/active/{feature}.md` 移动到 `docs/plans/completed/{feature}.md`。
 
 ### 8.2 更新质量文档
 
@@ -579,12 +679,36 @@ feature_name: {feature-name}
 
 ### 8.4 更新全局索引
 
-- 更新 `docs/specs/index.md`：新增本功能的索引行（功能名、状态、一行描述、关键 API、关键页面、路径）
-- 更新 `docs/architecture.md`：如有新增模块/API/数据表，追加到对应汇总表（模块表、API 汇总表、数据模型概览）
+- **8.4.1** 更新 `docs/specs/index.md`：新增本功能的索引行（功能名、状态、一行描述、关键 API、关键页面、路径）
+- **8.4.2** 更新 `docs/architecture.md`：如有新增模块/API/数据表，追加到对应汇总表（模块表、API 汇总表、数据模型概览）
+- **8.4.3** 更新 `workspace/cr-index.md`：添加/更新本功能行，填入 review-log.md 中最终的 OPEN CR 数和 OPEN Bug 数。若所有问题已 RESOLVED，设 CR OPEN = 0、Bug OPEN = 0
+- **8.4.4** 刷新 `workspace/stage-status.json` 中本功能的状态：
+  - 设 `completedAt` 为当前 ISO 时间戳
+  - 校正 `metrics` 字段（crCriticalCount/crHighCount 为累计发现总数）
+  - 修正 `outputs` 路径（如 exec-plan 已从 active/ 移至 completed/，更新路径）
+  - 设 `stage: "gc"`, `status: "completed"`
+- **8.4.5** 分支合并提醒（仅当 feature 的 `repos` 数组非空时执行）：
+  - 扫描 `repos` 数组，筛选 `branchCreated == true && branchMerged == false` 的条目
+  - 向用户输出合并提醒清单：仓库名、特性分支名、目标主分支、仓库路径、合并命令参考
+  - 使用 `AskUserQuestion` 询问用户合并状态
+  - 已合并 → 更新 `repos[].branchMerged = true`
+  - 暂不合并 → 在 `workspace/memory.md` 区域 C 记录待合并分支信息
 
 > 注意：只登记摘要信息和链接，不复制详细内容。详细内容在 feature 目录中维护。
 
-### 8.5 知识沉淀
+### 8.5 登记遗留问题
+
+扫描 `docs/specs/{feature}/review-log.md` 中所有状态为 OPEN 的条目（MEDIUM/LOW 级别）：
+
+1. 计入 `workspace/cr-index.md` 的 CR OPEN 计数
+2. 在 `workspace/memory.md` 区域 C（当前活跃约束）记录：
+   - `{feature}: {N} 个遗留 CR 问题（{M} MEDIUM, {L} LOW）— 详见 review-log.md`
+3. 这些遗留问题成为后续 bug-fix 或重构周期的候选项
+4. `/health-check` 会在"CR Log unresolved"指标中统计它们
+
+> **什么计入 OPEN**：review-log.md 中所有未标记 RESOLVED 的条目，包括遗留的 MEDIUM/LOW。
+
+### 8.6 知识沉淀
 
 | 沉淀类型 | 目标路径 | 内容 |
 |----------|----------|------|
@@ -604,7 +728,7 @@ feature_name: {feature-name}
 
 > **为什么**：lesson 被写入但未应用 = 无效沉淀。只有在下一轮功能开始前确认已更新模板/规则，自进化才能真正生效。
 
-### 8.6 框架自检（每 3 个功能执行一次）
+### 8.7 框架自检（每 3 个功能执行一次）
 
 每完成 3 个功能后，执行框架健康检查：
 
@@ -692,7 +816,17 @@ feature_name: {feature-name}
         "loopRoundTotal": 0,
         "crCriticalCount": 0,
         "crHighCount": 0
-      }
+      },
+      "repos": [
+        {
+          "name": "仓库名",
+          "path": "仓库路径",
+          "defaultBranch": "main",
+          "featureBranch": "feature/{feature-name}",
+          "branchCreated": true,
+          "branchMerged": false
+        }
+      ]
     }
   },
   "projectName": "{project-name}",
@@ -721,6 +855,13 @@ feature_name: {feature-name}
 | `metrics.loopRoundTotal` | number | P4 最终使用的总循环轮次 |
 | `metrics.crCriticalCount` | number | Code Review 发现的 CRITICAL 问题总数 |
 | `metrics.crHighCount` | number | Code Review 发现的 HIGH 问题总数 |
+| `repos` | array（可选） | 多仓库特性分支状态。未配置多仓库时为空或不存在 |
+| `repos[].name` | string | 仓库名（对应 CLAUDE.md §8 仓库路径表） |
+| `repos[].path` | string | 仓库路径（相对或绝对） |
+| `repos[].defaultBranch` | string | 主分支名称（如 `main`、`develop`） |
+| `repos[].featureBranch` | string | 特性分支名称（如 `feature/user-auth`） |
+| `repos[].branchCreated` | boolean | 特性分支是否已创建 |
+| `repos[].branchMerged` | boolean | 特性分支是否已合并回主分支 |
 
 ### archived 字段说明
 

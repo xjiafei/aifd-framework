@@ -49,15 +49,38 @@
 
 **范围：**
 
-<!-- 需要覆盖的用户场景和关键流程 -->
+<!-- 需要覆盖的用户场景和关键流程（从 product.md 用户流程图识别） -->
 
 -
 
 **目标：**
 
-<!-- 用户体验验证、全链路功能验证 -->
+<!-- 用户体验验证、全链路功能验证、跨服务集成验证 -->
 
 -
+
+**E2E 执行策略：**
+
+| 策略 | 适用场景 | 工具 | 产出物 |
+|------|---------|------|--------|
+| Prong A — MCP 直接 | 简单流（<= 5 步）、烟雾测试 | Playwright MCP 工具 | 快照验证记录（写入 test-report.md） |
+| Prong B — 生成脚本 | 复杂流（> 5 步）、回归测试 | Playwright Test | `testing/e2e/{feature}/*.spec.ts`（纳入 CI/CD） |
+
+**E2E 测试环境配置：**
+
+| 配置项 | 值 |
+|--------|-----|
+| backend_start_cmd | <!-- 后端启动命令，如 cd ../app/backend && mvn spring-boot:run --> |
+| frontend_start_cmd | <!-- 前端启动命令，如 cd ../app/frontend && npm run dev --> |
+| backend_health_url | <!-- 健康检查 URL，如 http://localhost:8080/actuator/health --> |
+| frontend_url | <!-- 前端地址，如 http://localhost:5173 --> |
+| startup_timeout_seconds | 120 |
+
+**E2E 用例分配：**
+
+| 用例ID | 描述 | 执行策略 | 理由 |
+|--------|------|---------|------|
+| TC-E-001 | | Prong A / Prong B | |
 
 ---
 
@@ -65,11 +88,11 @@
 
 <!-- 将每条验收标准映射到具体的测试用例，确保完整覆盖 -->
 
-| AC 编号 | AC 描述 | 测试类型 | 测试文件/函数 | 状态 |
-|---------|---------|----------|--------------|------|
-| AC-1 | | 单元/集成/E2E | `path/to/test::test_name` | 未编写/已编写/已通过/已失败 |
-| AC-2 | | 单元/集成/E2E | `path/to/test::test_name` | 未编写/已编写/已通过/已失败 |
-| AC-3 | | 单元/集成/E2E | `path/to/test::test_name` | 未编写/已编写/已通过/已失败 |
+| AC 编号 | AC 描述 | 测试类型 | 执行方式 | 测试文件/函数 | 状态 |
+|---------|---------|----------|---------|--------------|------|
+| AC-1 | | 单元/集成/E2E | Bash / Prong A / Prong B | `path/to/test::test_name` | 未编写/已编写/已通过/已失败 |
+| AC-2 | | 单元/集成/E2E | Bash / Prong A / Prong B | `path/to/test::test_name` | 未编写/已编写/已通过/已失败 |
+| AC-3 | | 单元/集成/E2E | Bash / Prong A / Prong B | `path/to/test::test_name` | 未编写/已编写/已通过/已失败 |
 
 ---
 
@@ -91,6 +114,9 @@
 ```bash
 # 运行全部相关测试
 {测试执行命令}
+
+# 运行 E2E 测试（Prong B 脚本）
+npx playwright test testing/e2e/{feature}/ --reporter=json
 ```
 
 ---

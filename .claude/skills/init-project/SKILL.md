@@ -7,6 +7,23 @@ description: "当需要将 AIFD 框架接入一个新项目或已有项目时使
 
 > 将 AIFD 框架接入你的项目。绿地（新建）和存量（已有代码）项目均适用。
 
+### 推荐目录结构
+
+aifd-framework 应放在项目根目录内，与业务代码目录同级：
+
+```
+{project-root}/
+  ├── aifd-framework/    ← 框架实例（Claude Code 工作目录）
+  ├── backend/           ← 后端代码（可以是独立 git 仓库）
+  ├── frontend/          ← 前端代码（可以是独立 git 仓库）
+  ├── testing/           ← 测试脚本
+  │   └── e2e/           ← E2E Playwright 脚本
+  └── ...
+```
+
+> 框架内的相对路径均以 `..` 开头引用同级目录（如 `../backend`、`../frontend`）。
+> 每个子目录可以是独立的 git 仓库，也可以统一使用项目根目录的 git 仓库。
+
 ---
 
 ## 执行流程
@@ -33,6 +50,7 @@ description: "当需要将 AIFD 框架接入一个新项目或已有项目时使
 **问题 3：代码仓库**
 - 代码根目录路径（相对于本框架目录，如：../my-app 或绝对路径）
 - 是否有多个子仓库？若有，列出仓库名称和路径
+- 每个仓库的主分支名称？（默认：main。常见选项：main / master / develop）
 
 **问题 4：项目现状**
 - 是否是全新项目（绿地）？
@@ -42,9 +60,38 @@ description: "当需要将 AIFD 框架接入一个新项目或已有项目时使
 - 代码文件主要在哪些目录？（默认：src/ backend/ frontend/）
 - 是否有特殊路径？（如 Go 项目的 cmd/ internal/ pkg/）
 
+**问题 6：E2E 测试配置**（仅全栈或前端项目）
+- 前端开发服务器启动命令？（如：`npm run dev`）
+- 前端地址？（如：`http://localhost:5173`）
+- 后端启动命令？（如：`mvn spring-boot:run` / `npm run dev:server`）
+- 后端健康检查 URL？（如：`http://localhost:8080/actuator/health`）
+- 是否已安装 Playwright？（如未安装，初始化时会提示安装步骤）
+
 ---
 
 ### 阶段二：生成配置
+
+#### 2.0 初始化 Git 仓库
+
+对阶段一中声明的每个代码仓库路径：
+
+1. 检查该目录是否存在 `.git` 目录
+2. 如果**没有** git 仓库：
+   - `cd {代码仓库路径}`
+   - `git init`
+   - 根据技术栈生成 `.gitignore`（Java: `target/`, `*.class`, `.idea/`; Node: `node_modules/`, `dist/`; Python: `__pycache__/`, `.venv/`; Go: `vendor/`）
+   - `git add . && git commit -m "Initial project structure"`
+   - 记录主分支名称为 `main`（新仓库默认）
+3. 如果已有 git 仓库：
+   - 用 `git symbolic-ref --short HEAD` 检测当前默认分支名称
+   - 跳过初始化，记录到报告
+
+同时检查框架实例目录（当前工作目录）：
+1. 检查是否有 `.git` 目录
+2. 如果没有：`git init && git add . && git commit -m "AIFD framework initialized"`
+3. 如果已有：跳过
+
+在阶段四的初始化报告中记录 git 初始化状态。
 
 #### 2.1 填写 CLAUDE.md 项目定制区
 
@@ -62,9 +109,9 @@ description: "当需要将 AIFD 框架接入一个新项目或已有项目时使
 
 **代码仓库路径表**：
 ```markdown
-| 仓库 | 路径 | 说明 |
-|------|------|------|
-| {仓库名} | {路径} | {说明} |
+| 仓库 | 路径 | 主分支 | 说明 |
+|------|------|--------|------|
+| {仓库名} | {路径} | {主分支，默认 main} | {说明} |
 ```
 
 **构建验证命令表**：
@@ -145,6 +192,46 @@ is_code_path() {
   "projectName": "{项目名称}"
 }
 ```
+
+#### 2.6 清理 workspace 模板
+
+- 确认 `workspace/cr-index.md` 索引表为空（无残留示例数据）
+- 确认 `workspace/memory.md` 区域 A-E 内容为项目初始模板状态
+
+#### 2.7 初始化 E2E 测试基础设施（全栈/前端项目）
+
+如果项目类型为 B（前端）或 C（全栈）：
+
+1. 检查代码仓库中是否存在 `playwright.config.ts` 或 `testing/e2e/playwright.config.ts`
+2. 如果不存在，生成基础 Playwright 配置文件 `testing/e2e/playwright.config.ts`：
+   ```typescript
+   import { defineConfig } from '@playwright/test';
+
+   export default defineConfig({
+     testDir: '.',
+     use: {
+       baseURL: '{frontend_url}',
+       headless: true,
+       screenshot: 'only-on-failure',
+     },
+     projects: [
+       { name: 'chromium', use: { browserName: 'chromium' } },
+     ],
+     reporter: [['json', { outputFile: 'test-results.json' }]],
+   });
+   ```
+3. 创建 `testing/e2e/` 目录（如不存在）
+4. 在初始化报告中记录 E2E 基础设施状态
+5. 提示用户：如需运行 E2E 测试，需先执行 `npx playwright install chromium`
+
+#### 2.8 多仓库分支信息采集
+
+对阶段一中声明的每个代码仓库：
+
+1. `cd {仓库路径}`
+2. 检测当前默认分支：`git symbolic-ref --short HEAD`（新 init 的仓库默认为 `main`）
+3. 将检测到的主分支名填入 CLAUDE.md §8 代码仓库路径表的"主分支"列
+4. 在初始化报告中记录各仓库的分支信息
 
 ---
 
