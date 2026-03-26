@@ -13,6 +13,7 @@ description: "当用户明确要求启动新功能的完整研发流程（需求
 2. 读取 `CLAUDE.md` 中的强制规则 R1-R7
 2.5. 读取 `workspace/memory.md` — 了解项目当前状态和已有决策
 2.6. 读取 `docs/knowledges/` 下的已有知识文件（如存在）— 后续各阶段需参考
+2.7. **注入区一致性检查**：比对 CLAUDE.md §8 的技术栈/仓库表与各 agent 文件的 DYNAMIC_INJECT 注入区，如不一致（如新增了仓库或技术栈）则先更新注入区
 3. 向用户确认功能名称（用于创建 `docs/specs/{feature-name}/` 目录）
 4. 创建 Task 链：
    ```

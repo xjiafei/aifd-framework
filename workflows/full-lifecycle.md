@@ -161,44 +161,45 @@ Task 5: [P5] 测试验证与收尾   (blockedBy: 4)
 | 相关编码标准 | docs/knowledges/standards/{tech}.md |
 | 当前里程碑/任务描述 | exec-plan 中的具体里程碑 |
 
-### DYNAMIC_INJECT 填充协议（编排者必须执行）
+### DYNAMIC_INJECT 填充协议（两层注入）
 
-**核心机制**：agent 文件中的 `<!-- DYNAMIC_INJECT_START/END -->` 是注入点标记，表示"派发此 agent 时，在此处追加项目上下文"。**不需要修改 agent 文件本身**，而是在调用 Agent 工具时，将注入内容拼入 prompt。
+agent 文件中的 `<!-- DYNAMIC_INJECT_START/END -->` 是注入点标记，采用**静态写入 + 动态补充**两层机制：
 
-**三步操作**：
+**第一层：静态写入（项目级，由 `/init-project` 执行）**
 
-**Step 1 — 读取 agent 文件**
+`/init-project` 时将**不常变化的项目信息**直接写入 agent 文件的注入区：
+
+```markdown
+<!-- DYNAMIC_INJECT_START -->
+## 当前项目技术约束
+
+- **技术栈**：Java 17 + Spring Boot 3.2（后端）/ Vue 3 + Vite（前端）
+- **构建命令**：cd ../backend && mvn clean package -DskipTests
+- **测试命令**：cd ../backend && mvn test
+- **代码规范**：参见 docs/knowledges/standards/（如存在）
+- **架构规范**：参见 docs/architecture.md
+- **代码路径**：../backend/src/、../frontend/src/
+<!-- DYNAMIC_INJECT_END -->
 ```
-Read .claude/agents/xxx-agent.md → 获取 agent 完整指令
-```
 
-**Step 2 — 收集注入内容**（从以下来源读取）
+> **变更时机**：当 CLAUDE.md §8 仓库表新增技术栈或仓库时，同步更新相关 agent 的注入区。
+> 编排者在新功能启动时应检查注入区与 CLAUDE.md §8 是否一致，不一致则先更新。
 
-| 注入字段 | 来源 |
-|---------|------|
-| 项目名称、技术栈、构建命令、测试命令 | `CLAUDE.md §8 项目定制区` |
-| 当前功能名称 | `workspace/stage-status.json` → `features` 中 running 的功能 |
-| 相关知识文件路径 | `docs/knowledges/index.md` → 按业务关键词匹配 |
-| 代码规范（dev-agent 额外） | `docs/knowledges/standards/{tech}.md`（如存在） |
-| 当前里程碑（dev-agent 额外） | `docs/plans/active/{feature}.md` 当前里程碑 |
+**第二层：动态补充（功能级，由编排者派发时拼入 prompt）**
 
-**Step 3 — 拼接 prompt 后调用 Agent 工具**
+编排者派发子代理时，在 prompt 末尾追加**每次变化的运行时信息**：
 
 ```
-[agent 文件完整内容]
+[agent 文件完整内容（已含静态注入区）]
 
 ---
-## 当前项目上下文（编排者注入）
+## 当前任务上下文（编排者注入）
 
-- **项目名称**：{xxx}
-- **技术栈**：{xxx}
-- **构建命令**：{xxx}
-- **测试命令**：{xxx}
 - **当前功能**：{feature-name}
 - **相关知识**：[docs/knowledges/xxx.md, ...]
 （dev-agent 额外）
-- **代码规范**：docs/knowledges/standards/{tech}.md
 - **当前里程碑**：M### — {里程碑描述}
+- **特性分支信息**：repos 数组（如有）
 ---
 
 [具体任务描述]

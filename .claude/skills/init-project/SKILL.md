@@ -173,6 +173,11 @@ is_code_path() {
 
 **多技术栈项目（如 FE + BE 分离）**：在对应 agent 的注入区分别填写各自技术栈信息；或为 FE/BE 各创建专用 agent 文件（如 `fe-dev-agent.md` / `be-dev-agent.md`），在 CLAUDE.md 的编排者说明中注记何时调用哪个。
 
+> **后续维护**：当项目新增仓库或技术栈时（如新增 Python 微服务），需同步更新：
+> 1. CLAUDE.md §8 仓库路径表和技术栈表
+> 2. 相关 agent 文件的 DYNAMIC_INJECT 注入区
+> 编排者在新功能启动时应检查注入区与 CLAUDE.md §8 是否一致，不一致则先更新。
+
 #### 2.4 创建 docs/architecture.md
 
 从 `docs/architecture.md`（当前为通用模板）创建项目专属版本：
