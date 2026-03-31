@@ -133,55 +133,50 @@ cd my-project-aifd
 
 **核心思路**：AIFD 框架本身作为独立的"编排仓库"，Claude Code 在此仓库中运行，通过相对路径访问和修改业务仓库的代码。
 
-**目录结构**（以前后端分离、各自独立 git 仓库为例）：
+**目录结构**（以前后端分离、各有多个服务仓库为例）：
 
 ```
-workspace/                           # 本地工作目录（不是 git 仓库）
-├── my-project-aifd/                 ← AIFD 编排仓库（Claude Code 的工作目录）
+my-project/                          # 项目根目录（不是 git 仓库）
+├── aifd-framework/                  ← AIFD 编排仓库（Claude Code 的工作目录）
 │   ├── CLAUDE.md
 │   ├── .claude/
 │   ├── docs/                        ← 所有设计文档、规格、知识库在此沉淀
 │   └── workspace/
 │
-├── backend/                         ← 后端业务仓库（独立 git 仓库）
-│   ├── src/
-│   └── ...
+├── backend/                         ← 后端分组目录（非 git 仓库，仅用于分组）
+│   ├── auth-service/                ← 独立 git 仓库
+│   ├── user-service/                ← 独立 git 仓库
+│   └── order-service/               ← 独立 git 仓库
 │
-├── frontend-web/                    ← Web 前端仓库（独立 git 仓库）
-│   ├── src/
-│   └── ...
-│
-└── mobile-app/                      ← 移动端仓库（独立 git 仓库，如有）
-    ├── src/
-    └── ...
+└── frontend/                        ← 前端分组目录（非 git 仓库，仅用于分组）
+    ├── web-app/                     ← 独立 git 仓库
+    └── admin-panel/                 ← 独立 git 仓库
 ```
 
-**第 1 步：克隆框架和各业务仓库**
+**第 1 步：克隆框架**
 
 ```bash
-mkdir workspace && cd workspace
-git clone <aifd-framework-url> my-project-aifd
-git clone <backend-url> backend
-git clone <frontend-url> frontend-web
-# 如有更多仓库按此格式并列克隆
+mkdir my-project && cd my-project
+git clone <aifd-framework-url> aifd-framework
 ```
 
 **第 2 步：在编排仓库中打开 Claude Code**
 
 ```bash
-cd my-project-aifd
+cd aifd-framework
 # 此处启动 Claude Code，所有 Agent 和 Hook 均以此目录为根
 ```
 
-**第 3 步：运行初始化向导（含存量模式）**
+**第 3 步：运行初始化向导，自动克隆业务仓库**
 
 ```
 /init-project
 ```
 
-向导识别到存量项目后会额外执行：
-- 录入各业务仓库的相对路径（如 `../backend`, `../frontend-web`）
-- 配置 `CLAUDE.md §8` 中的代码仓库路径表
+向导会询问是否有远程仓库需要克隆。提供仓库信息后，自动完成：
+- 按分组创建 `../backend/`、`../frontend/` 等类别目录
+- 将每个仓库克隆到对应子目录（如 `../backend/auth-service`）
+- 配置 `CLAUDE.md §8` 中的代码仓库路径表和分支信息
 - 配置 `legacyPaths`（遗留代码路径豁免，存量代码不受 Hook 拦截）
 - 为核心模块创建简化版 `tech.md`（作为追溯起点）
 
@@ -191,7 +186,7 @@ cd my-project-aifd
 - 存在 Bug 需要修复 → `/bug-fix`
 - 技术设计已完成，直接开始编码 → `/close-loop`
 
-> **注意**：Claude Code 可以通过相对路径（`../backend/src/...`）读写业务仓库的文件。各业务仓库保持独立，各自管理 git 历史和 CI/CD，编排仓库只负责流程协调和文档沉淀。
+> **注意**：Claude Code 通过相对路径（如 `../backend/auth-service/src/...`）读写业务仓库文件。各业务仓库保持独立，各自管理 git 历史和 CI/CD，编排仓库只负责流程协调和文档沉淀。
 
 ---
 
@@ -272,35 +267,35 @@ cd my-project-aifd
 
 ## 多仓库支持
 
-AIFD 支持**编排仓库 + 并列业务仓库**模式（推荐）和**编排仓库内嵌子目录**模式。
+AIFD 支持多个业务仓库的统一编排。推荐使用**分组子目录**结构，每个仓库一个独立目录。
 
-### 推荐：并列放置（各仓库独立）
+### 推荐：分组子目录（每仓库独立，按类别分组）
 
 ```
-workspace/                   # 本地工作目录
-├── my-project-aifd/         # 编排仓库（Claude Code 工作目录）
+my-project/                  # 项目根目录（不是 git 仓库）
+├── aifd-framework/          # 编排仓库（Claude Code 工作目录）
+├── backend/                 # 后端分组目录（非 git，仅分组）
+│   ├── auth-service/        # 独立 git 仓库
+│   ├── user-service/        # 独立 git 仓库
+│   └── order-service/       # 独立 git 仓库
+└── frontend/                # 前端分组目录（非 git，仅分组）
+    ├── web-app/             # 独立 git 仓库
+    └── admin-panel/         # 独立 git 仓库
+```
+
+Claude Code 通过相对路径 `../backend/auth-service/src/...` 访问业务代码。`/init-project` 会自动完成目录创建和仓库克隆。
+
+### 备选：扁平并列（仓库较少时适用）
+
+```
+my-project/                  # 项目根目录（不是 git 仓库）
+├── aifd-framework/          # 编排仓库（Claude Code 工作目录）
 ├── backend/                 # 后端仓库（独立 git）
 ├── frontend-web/            # Web 前端仓库（独立 git）
 └── mobile-app/              # 移动端仓库（独立 git，如有）
 ```
 
-Claude Code 通过相对路径 `../backend/src/...` 访问业务代码。适合大多数团队，各业务仓库 CI/CD 完全独立。
-
-### 备选：子目录内嵌（方便整体管理）
-
-```
-my-project-aifd/             # 编排仓库（Claude Code 工作目录）
-├── CLAUDE.md
-├── .claude/
-├── docs/
-├── workspace/
-└── repos/                   # 通过 git submodule 或直接克隆
-    ├── backend/
-    ├── frontend-web/
-    └── shared/
-```
-
-适合需要一键克隆整个项目的场景，但各子仓库 git 操作需在对应子目录内执行。
+适合仓库数量少（3 个以内）、无需按类别分组的情况。
 
 ### 编排规则
 

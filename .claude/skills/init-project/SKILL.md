@@ -13,16 +13,21 @@ aifd-framework 应放在项目根目录内，与业务代码目录同级：
 
 ```
 {project-root}/
-  ├── aifd-framework/    ← 框架实例（Claude Code 工作目录）
-  ├── backend/           ← 后端代码（可以是独立 git 仓库）
-  ├── frontend/          ← 前端代码（可以是独立 git 仓库）
-  ├── testing/           ← 测试脚本
-  │   └── e2e/           ← E2E Playwright 脚本
+  ├── aifd-framework/        ← 框架实例（Claude Code 工作目录）
+  ├── backend/               ← 后端类别目录（非 git 仓库，仅用于分组）
+  │   ├── auth-service/      ← 独立 git 仓库（clone 目标）
+  │   ├── user-service/      ← 独立 git 仓库（clone 目标）
+  │   └── order-service/     ← 独立 git 仓库（clone 目标）
+  ├── frontend/              ← 前端类别目录（非 git 仓库，仅用于分组）
+  │   ├── web-app/           ← 独立 git 仓库（clone 目标）
+  │   └── admin-panel/       ← 独立 git 仓库（clone 目标）
+  ├── testing/               ← 测试脚本
+  │   └── e2e/               ← E2E Playwright 脚本
   └── ...
 ```
 
-> 框架内的相对路径均以 `..` 开头引用同级目录（如 `../backend`、`../frontend`）。
-> 每个子目录可以是独立的 git 仓库，也可以统一使用项目根目录的 git 仓库。
+> 框架内的相对路径均以 `..` 开头引用同级目录（如 `../backend/auth-service`）。
+> **每个仓库目录是独立的 git 仓库**；类别目录（backend/frontend）本身不是 git 仓库，只起分组作用。
 
 ---
 
@@ -41,20 +46,47 @@ aifd-framework 应放在项目根目录内，与业务代码目录同级：
   - D. 微服务（多仓库编排）
   - E. 其他（说明）
 
-**问题 2：技术栈**
+**问题 2：项目现状**（提前询问，决定后续收集方式）
+- 是否是全新项目（绿地）？
+- 还是已有代码（棕地/存量）？若是存量，现有代码大概几个模块？
+
+> 棕地项目的技术栈将在代码克隆/扫描后自动检测，无需手动填写。
+
+**问题 3：代码仓库**
+
+首先询问：是否有远程仓库需要克隆到本地？
+
+**场景 A：有远程仓库需要克隆（棕地接入）**
+
+按分组收集仓库信息。每个分组对应一个类别目录（如 backend / frontend），每个仓库克隆到该类别目录下的独立子目录。
+
+示例表格（用户填写）：
+
+| 类别目录 | 仓库目录名 | 远程 URL | 主分支 |
+|----------|-----------|----------|--------|
+| backend | auth-service | https://github.com/org/auth.git | main |
+| backend | user-service | git@github.com:org/user.git | main |
+| frontend | web-app | https://github.com/org/web.git | master |
+| frontend | admin-panel | https://github.com/org/admin.git | main |
+
+克隆后目录结构：
+```
+../backend/auth-service/
+../backend/user-service/
+../frontend/web-app/
+../frontend/admin-panel/
+```
+
+**场景 B：代码已在本地**
+
+- 提供各仓库的本地路径（相对于本框架目录，如：../backend/auth-service）
+- 每个仓库的主分支名称（默认：main）
+
+**问题 4：技术栈**（**仅绿地项目**询问，棕地跳过）
 - 后端语言与框架（如：Java + Spring Boot 3.x、Python + FastAPI、Go + Gin、Node.js + Express）
 - 前端框架（如：Vue 3、React 18、无前端）
 - 数据库（如：MySQL 8、PostgreSQL、MongoDB、无数据库）
 - 构建工具（如：Maven、Gradle、npm、pnpm、go build）
-
-**问题 3：代码仓库**
-- 代码根目录路径（相对于本框架目录，如：../my-app 或绝对路径）
-- 是否有多个子仓库？若有，列出仓库名称和路径
-- 每个仓库的主分支名称？（默认：main。常见选项：main / master / develop）
-
-**问题 4：项目现状**
-- 是否是全新项目（绿地）？
-- 还是已有代码（存量）？若是存量，现有代码大概几个模块？
 
 **问题 5：代码路径模式**（hook 守卫配置）
 - 代码文件主要在哪些目录？（默认：src/ backend/ frontend/）
@@ -71,9 +103,116 @@ aifd-framework 应放在项目根目录内，与业务代码目录同级：
 
 ### 阶段二：生成配置
 
+#### 0. 克隆远程仓库（场景 A 专属，场景 B 跳过）
+
+仅当用户在问题 3 选择"有远程仓库需要克隆"时执行此步骤。
+
+对问题 3 收集到的每条仓库记录，按顺序执行：
+
+1. **确定目标路径**：`{项目根目录}/{类别目录}/{仓库目录名}`，相对于框架目录为 `../{类别目录}/{仓库目录名}`
+
+2. **检查目标目录是否已存在**：
+   - 若目录已存在且**非空**：询问用户选择
+     - `[S] 跳过`：保留现有代码，直接记录路径
+     - `[R] 重新克隆`：删除目录后重新克隆（需用户确认）
+   - 若目录不存在或为空：继续执行克隆
+
+3. **创建类别目录**（如不存在）：
+   ```bash
+   mkdir -p ../{类别目录}
+   ```
+
+4. **克隆仓库**：
+   ```bash
+   git clone {远程URL} ../{类别目录}/{仓库目录名}
+   ```
+   - 若 URL 为 SSH 格式（`git@...`），提示用户确保 SSH key 已配置
+   - 若克隆失败（网络/权限），记录错误，继续处理其余仓库，最终在报告中列出失败项
+
+5. **克隆成功后检测实际主分支**：
+   ```bash
+   git -C ../{类别目录}/{仓库目录名} symbolic-ref --short HEAD
+   ```
+   以实际检测结果为准（覆盖用户填写的值）
+
+6. **将该仓库记录到内部列表**，供后续 §2.1 填写 CLAUDE.md 使用：
+   ```
+   仓库名: {仓库目录名}
+   路径: ../{类别目录}/{仓库目录名}
+   主分支: {检测结果}
+   说明: {类别目录}
+   ```
+
+所有仓库处理完毕后，在阶段四的初始化报告中汇总克隆结果（成功/跳过/失败）。
+
+---
+
+#### 0.5 技术栈自动检测（棕地项目专属，绿地跳过）
+
+**触发时机**：
+- 场景 A：§0 克隆完成后立即执行
+- 场景 B（本地已有代码）：§2.0 执行前执行
+
+对内部仓库列表中的每个仓库路径，使用 `Glob` 扫描根目录及一级子目录的特征文件，按以下规则推断技术栈：
+
+**语言/框架检测规则**：
+
+| 特征文件 | 推断结论 |
+|---------|---------|
+| `pom.xml` | Java + Maven |
+| `build.gradle` / `build.gradle.kts` | Java 或 Kotlin + Gradle |
+| `go.mod` | Go（读取文件内容，从 `require` 块推断框架：gin / echo / fiber / chi） |
+| `requirements.txt` / `pyproject.toml` / `setup.py` | Python（读取内容推断框架：fastapi / django / flask） |
+| `Cargo.toml` | Rust |
+| `composer.json` | PHP |
+| `package.json` | Node.js（读取 `dependencies` 字段推断细分）：<br>- 含 `"react"` → React<br>- 含 `"vue"` → Vue<br>- 含 `"next"` → Next.js<br>- 含 `"nuxt"` → Nuxt<br>- 含 `"@nestjs/core"` → NestJS<br>- 含 `"express"` → Express<br>- 无前端框架特征 → Node.js（通用） |
+
+**数据库检测规则**（读取以下配置文件内容，查找关键词）：
+
+| 配置文件 | 关键词 → 数据库 |
+|---------|--------------|
+| `src/main/resources/application.properties` 或 `application.yml` | `mysql` → MySQL；`postgresql` / `postgres` → PostgreSQL；`h2` → H2（测试库） |
+| `requirements.txt` / `pyproject.toml` | `pymongo` → MongoDB；`psycopg2` / `asyncpg` → PostgreSQL；`mysql-connector` / `aiomysql` → MySQL；`sqlalchemy` → 关系型（需进一步看 DB URL） |
+| `package.json` | `mongoose` → MongoDB；`pg` / `@prisma/client`（Prisma schema 中找 provider）→ PostgreSQL；`mysql2` / `knex` → MySQL |
+| `go.mod` | `gorm.io/driver/mysql` → MySQL；`gorm.io/driver/postgres` → PostgreSQL；`go.mongodb.org/mongo-driver` → MongoDB |
+
+**检测完成后**：
+
+1. 汇总所有仓库结果，以表格形式展示给用户确认：
+
+   ```
+   检测到以下技术栈（请确认，如有误可直接修正）：
+
+   | 仓库 | 语言/框架 | 数据库 | 构建工具 |
+   |------|----------|--------|---------|
+   | backend/auth-service | Java 17 + Spring Boot 3.x | MySQL | Maven |
+   | backend/user-service | Java 17 + Spring Boot 3.x | PostgreSQL | Maven |
+   | frontend/web-app | Node.js + Vue 3 | 无 | npm |
+   | frontend/admin-panel | Node.js + React | 无 | pnpm |
+   ```
+
+2. 用户确认或修正后，将最终结果记录为内部"技术栈上下文"，格式：
+   ```
+   仓库: backend/auth-service
+   语言框架: Java 17 + Spring Boot 3.x
+   数据库: MySQL
+   构建工具: Maven
+   ```
+
+3. 此上下文用于后续 §2.1 填写 CLAUDE.md 技术栈表，以及 §2.3 配置 Agent 注入区。
+   - 多仓库多技术栈时，§2.1 的技术栈表按仓库分组填写（或合并相同栈）
+   - §2.3 的 agent 注入区按仓库分别填写各自的语言/构建/测试信息
+
+---
+
 #### 2.0 初始化 Git 仓库
 
-对阶段一中声明的每个代码仓库路径：
+**仓库列表来源**：
+- 场景 A（远程克隆）：使用步骤 §0 构建的内部列表（已克隆的全部路径）
+- 场景 B（本地已有，棕地）：使用问题 3 用户填写的本地路径列表；执行本步骤前先完成 §0.5 技术栈检测
+- 场景 B（本地已有，绿地）：使用问题 3 用户填写的本地路径列表；技术栈来自问题 4 的用户填写
+
+对列表中的每个代码仓库路径：
 
 1. 检查该目录是否存在 `.git` 目录
 2. 如果**没有** git 仓库：
