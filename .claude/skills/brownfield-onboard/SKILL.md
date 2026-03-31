@@ -59,6 +59,53 @@ description: "当需要深入理解棕地（已有）项目、为其补充业务
 > {模块列表}
 > 是否有你特别希望我重点分析的模块？」
 
+#### 1.4 并行分析准备
+
+统计代码仓库数量（来自 CLAUDE.md §8 代码仓库路径表）：
+
+- **若仅 1 个仓库**：跳过并行逻辑，直接进入阶段二，按原有串行流程执行
+- **若 2 个及以上仓库**：启动并行模式，为每个仓库构建分析上下文包
+
+并行模式下，为每个仓库准备以下上下文（供阶段二~四的 Agent 使用）：
+
+```
+仓库上下文包（每个仓库一份）：
+  repo_path:   "../backend/auth-service"          ← 来自 CLAUDE.md §8
+  repo_name:   "auth-service"                     ← 目录名
+  tech_stack:  "Java 17 + Spring Boot 3.x"        ← 来自 CLAUDE.md §8 或 §0.5 检测结果
+  build_tool:  "Maven"
+  module_map:  ["用户认证模块 — 登录/注册/token", ...]  ← 来自 §1.3
+  output_paths:
+    glossary:  "docs/knowledges/domain/{repo-name}-glossary.md"
+    standards: "docs/knowledges/standards/{tech}-{repo-name}-coding-standards.md"
+    patterns:  "docs/knowledges/architecture/{repo-name}-patterns.md"
+```
+
+> 路径中嵌入 `repo-name` 确保多仓库产出文件互不覆盖。
+
+---
+
+### 阶段二~四：知识提取
+
+> **单仓库**：按下方阶段二、三、四串行执行（原有流程不变）。
+> **多仓库**：使用 Agent 工具并行派发，所有仓库同时分析，完成后汇总进入阶段五。
+
+#### 多仓库并行执行入口
+
+**在同一条消息中**对每个仓库各派发一个 `general-purpose` Agent（所有 Agent 同时启动）。
+
+每个 Agent 的 prompt 必须包含：
+1. 仓库路径、技术栈、构建工具（来自 §1.4 上下文包）
+2. 模块职责地图（来自 §1.3，已与用户确认）
+3. 下方**阶段二、三、四的完整执行指令**（逐字复制，替换路径变量）
+4. 明确的输出文件路径（来自 §1.4 `output_paths`）
+5. 约束声明：**只写入 `output_paths` 中指定的 3 个文件，不得修改任何其他文件**
+
+所有 Agent 并行运行，全部完成后：
+- 收集每个 Agent 产出的文件路径列表
+- 验证 3 个输出文件均已创建（如有失败，记录原因，不阻断其他仓库结果）
+- 进入阶段五
+
 ---
 
 ### 阶段二：业务领域知识提取
@@ -82,7 +129,8 @@ description: "当需要深入理解棕地（已有）项目、为其补充业务
 生命周期：PENDING → CONFIRMED → SHIPPED → DELIVERED / CANCELLED
 ```
 
-**输出文件**：`docs/knowledges/domain/{domain}-glossary.md`
+**输出文件**：`docs/knowledges/domain/{repo-name}-glossary.md`
+（单仓库时 `repo-name` 可用领域名代替；多仓库并行时由 §1.4 output_paths 指定，Agent 直接使用传入路径）
 
 ```markdown
 ## Meta
@@ -164,7 +212,8 @@ description: "当需要深入理解棕地（已有）项目、为其补充业务
 - 事务管理方式（注解 vs 编程式）
 - 配置管理方式（环境变量 vs 配置文件 vs 配置中心）
 
-**输出文件**：`docs/knowledges/standards/{tech}-coding-standards.md`
+**输出文件**：`docs/knowledges/standards/{tech}-{repo-name}-coding-standards.md`
+（多仓库并行时由 §1.4 output_paths 指定，Agent 直接使用传入路径）
 
 ```markdown
 ## Meta
@@ -240,7 +289,8 @@ description: "当需要深入理解棕地（已有）项目、为其补充业务
 - 软删除策略（is_deleted 字段 / deleted_at / 独立归档表）
 - 多租户策略（如果适用）
 
-**输出文件**：`docs/knowledges/architecture/001-brownfield-patterns.md`
+**输出文件**：`docs/knowledges/architecture/{repo-name}-patterns.md`
+（多仓库并行时由 §1.4 output_paths 指定，Agent 直接使用传入路径）
 
 ```markdown
 ## Meta
@@ -405,13 +455,21 @@ description: "当需要深入理解棕地（已有）项目、为其补充业务
 
 #### 6.1 更新知识库索引
 
-将本次创建的所有知识文件追加到 `docs/knowledges/index.md` 的索引表：
+收集所有并行 Agent（或串行流程）产出的文件路径列表，**一次性批量追加**到 `docs/knowledges/index.md`：
+
+多仓库示例（每个仓库产出 3 条）：
 
 | 类型 | 文件路径 | 适用场景 | 关键词 |
 |------|---------|---------|--------|
-| 业务领域知识 | `domain/{domain}-glossary.md` | 编写需求/技术文档时统一术语 | {核心术语} |
-| 编码规范 | `standards/{tech}-coding-standards.md` | dev-agent 编写代码时遵循 | 编码规范,命名,风格 |
-| 架构决策 | `architecture/001-brownfield-patterns.md` | 技术方案设计时了解现有模式 | 架构,集成,数据访问 |
+| 业务领域知识 | `domain/auth-service-glossary.md` | 编写需求/技术文档时统一术语 | {auth-service 核心术语} |
+| 编码规范 | `standards/java-auth-service-coding-standards.md` | dev-agent 编写代码时遵循 | 编码规范,命名,风格,java |
+| 架构决策 | `architecture/auth-service-patterns.md` | 技术方案设计时了解现有模式 | 架构,集成,数据访问 |
+| 业务领域知识 | `domain/user-service-glossary.md` | 编写需求/技术文档时统一术语 | {user-service 核心术语} |
+| 编码规范 | `standards/java-user-service-coding-standards.md` | dev-agent 编写代码时遵循 | 编码规范,命名,风格,java |
+| 架构决策 | `architecture/user-service-patterns.md` | 技术方案设计时了解现有模式 | 架构,集成,数据访问 |
+| ... | ... | ... | ... |
+
+> 对每个成功完成的 Agent 产出，追加对应的 3 行；失败/跳过的仓库不追加，在阶段七报告中标注。
 
 #### 6.2 更新 Agent 注入区
 
@@ -445,13 +503,19 @@ description: "当需要深入理解棕地（已有）项目、为其补充业务
 ```markdown
 ## /brownfield-onboard 完成
 
-### 知识库新增
+### 知识库新增（按仓库分组）
+
+**并行分析结果**：{成功 N 个 / 失败 M 个}
+
+{对每个成功完成的仓库，输出一组：}
+
+#### {repo-name}（✅ 完成 / ❌ 失败：{原因}）
 
 | 文件 | 内容摘要 | 关键发现 |
 |------|---------|---------|
-| `docs/knowledges/domain/{domain}-glossary.md` | {N} 个业务实体，{M} 条业务规则 | {最重要的发现} |
-| `docs/knowledges/standards/{tech}-coding-standards.md` | {N} 条命名约定，{M} 条禁止规则 | {最重要的发现} |
-| `docs/knowledges/architecture/001-brownfield-patterns.md` | {架构风格}，{N} 种集成模式，{M} 项技术债 | {最重要的发现} |
+| `domain/{repo-name}-glossary.md` | {N} 个业务实体，{M} 条业务规则 | {最重要的发现} |
+| `standards/{tech}-{repo-name}-coding-standards.md` | {N} 条命名约定，{M} 条禁止规则 | {最重要的发现} |
+| `architecture/{repo-name}-patterns.md` | {架构风格}，{N} 种集成模式，{M} 项技术债 | {最重要的发现} |
 
 ### 规格文档新增
 
