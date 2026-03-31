@@ -26,6 +26,7 @@
 | `/bug-fix` | 缺陷修复 | 技术设计 → 实现 → 测试 |
 | `/close-loop` | 技术设计审批后 | P4 自动闭环：coding → review → testing → acceptance |
 | `/init-project` | 框架接入新项目 | 引导式项目初始化配置 |
+| `/brownfield-onboard` | 理解已有项目、补充知识库和规格 | 代码扫描 → 业务知识提取 → 编码规范 → 设计规范 → spec补充 |
 | 自然语言描述 | 用户直接描述需求 | 按上表分类后，自动执行对应 Skill |
 
 当用户用自然语言描述需求时，按触发规则分类后，执行对应的 Skill。
@@ -64,7 +65,7 @@
 | `.claude/agents/` | 角色提示词模板（pm/arch/dev/qa/reviewer/precheck/devops + evolution-policy） |
 | `.claude/agents/agent-evolution-policy.md` | **框架自演进策略**（修改权限、触发时机、commit 约定） |
 | `.claude/agents/devops-agent.md` | DevOps/部署 Agent（Dockerfile/docker-compose/CI-CD） |
-| `.claude/skills/` | 工作流 Skill（new-feature / bug-fix / close-loop / init-project / health-check） |
+| `.claude/skills/` | 工作流 Skill（new-feature / bug-fix / close-loop / init-project / health-check / brownfield-onboard） |
 | `.claude/hooks/check-coding-gate.sh` | Hook：代码写入前检查 stage-status（支持 legacyPaths 豁免） |
 | `.claude/hooks/pre-implementation-check.sh` | Hook：实现阶段前检查 5 个设计文档是否存在且非空 |
 | `.claude/hooks/post-stage-check.sh` | Hook：各阶段完成后检查对应产出物是否完整 |

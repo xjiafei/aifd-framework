@@ -15,6 +15,7 @@
 | 经验教训 | `lessons-learned/001-verify-platform-specs-first.md` | 接入新平台/工具时 | 平台规格、Claude Code、框架设计 |
 | 迁移指南 | `guides/legacy-migration.md` | 存量项目接入 AIFD 框架 | 存量代码、遗留系统、渐进迁移 |
 | 设计模式 | `patterns/e2e-testing-pattern.md` | 项目有前端 UI 需要 E2E 测试时 | E2E, Playwright, 端到端, 浏览器测试, MCP, 自动化测试 |
+| 操作指南 | `guides/brownfield-onboard-guide.md` | 运行 /brownfield-onboard 后查阅，了解产出文件的维护规范 | 棕地, 遗留系统, 知识提取, 术语表, 编码规范 |
 
 ---
 
