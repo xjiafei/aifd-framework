@@ -121,6 +121,7 @@ allowed-tools: [Read, Grep, Glob, Write, Edit, AskUserQuestion]
 |------|--------|------|
 | 必须 | 验收结论 | `PASS` / `FAIL` + 逐条验收标准核对结果 |
 | 必须 | 未通过项说明 | 每条 FAIL 项附原因及建议修复方向 |
+| 必须 | 写入验收记录 | 将功能验收结论（含逐条核对表、未通过项、失败分类）**追加写入** `docs/specs/{feature}/review-acceptance.md` 的"功能验收"区域 |
 | 可选 | 改进建议 | 产品体验优化建议 |
 
 #### 执行步骤

@@ -321,6 +321,16 @@ feature_name: {feature-name}
 - 存在 **CRITICAL** 问题 → 修复后重新评审
 - 无 CRITICAL 问题 → 标记 `status: reviewed` → 更新 `stage-status.json` → **等待人工审批**
 
+**第三步：写入评审记录**
+
+将本轮评审结果写入（或追加至）`docs/specs/{feature-name}/review-requirement.md`：
+- 若文件不存在，基于 `docs/templates/review-requirement.md` 创建
+- 填写评审信息（轮次/日期/结论）
+- 填写 pm-agent 自检结论
+- 填写 qa-agent 和 arch-agent 的评审意见
+- 人工审批后，补充人工评审意见和最终结论
+- 若非首轮，在"修改记录"表追加新行
+
 ---
 
 ## 5. P2: 产品设计
@@ -370,6 +380,16 @@ feature_name: {feature-name}
 **评审结果处理：**
 - 存在 **CRITICAL** 问题 → 修复后重新评审
 - 无 CRITICAL 问题 → 标记 `status: reviewed` → 更新 `stage-status.json` → **等待人工审批**
+
+**第三步：写入评审记录**
+
+将本轮评审结果写入（或追加至）`docs/specs/{feature-name}/review-product.md`：
+- 若文件不存在，基于 `docs/templates/review-product.md` 创建
+- 填写评审信息（轮次/日期/结论）
+- 填写 pm-agent 自检结论
+- 填写 arch-agent 和 qa-agent 的评审意见
+- 人工审批后，补充人工评审意见和最终结论
+- 若非首轮，在"修改记录"表追加新行
 
 ---
 
@@ -455,6 +475,16 @@ feature_name: {feature-name}
 **评审结果处理：**
 - 存在 **CRITICAL** 问题 → 修复后重新评审
 - 无 CRITICAL 问题 → 进入跨工件一致性检查
+
+**第三步：写入评审记录**
+
+将本轮评审结果写入（或追加至）`docs/specs/{feature-name}/review-tech.md`：
+- 若文件不存在，基于 `docs/templates/review-tech.md` 创建
+- 填写预检结论（§6.4 第一步的 precheck-agent 结果）
+- 填写 arch-agent、pm-agent、qa-agent、dev-agent 的评审意见
+- 人工审批后，补充人工评审意见和最终结论
+- 跨工件一致性检查（§6.5）完成后，将检查矩阵结果填入"跨工件一致性检查结果"区域
+- 若非首轮，在"修改记录"表追加新行
 
 ### 6.5 跨工件一致性检查（P3 Gate 通过后、等待审批前）
 
@@ -632,7 +662,15 @@ feature_name: {feature-name}
 | **类型B：设计缺口** | tech.md 设计不足以实现 AC | arch-agent 更新 tech.md + exec-plan → 从 4.1 Coding 继续（+1 轮次） |
 | **类型C：需求分歧** | AC 与用户真实意图不符 | 立即暂停，AskUserQuestion 人工澄清（不消耗轮次），可能需回退到 P2/P3 |
 
-- **验收通过** → 进入退出条件检查
+- **验收通过** → 写入验收记录 → 进入退出条件检查
+
+**写入验收记录**：
+
+将本轮验收结果写入（或追加至）`docs/specs/{feature-name}/review-acceptance.md`：
+- 若文件不存在，基于 `docs/templates/review-acceptance.md` 创建
+- pm-agent 填写"功能验收"区域（轮次/日期/逐条 AC 核对/未通过项/失败分类）
+- arch-agent 填写"技术验收"区域（轮次/日期/逐项核对/技术债务/未通过项）
+- 若非首轮，追加新的验收区域（不覆盖前轮记录）
 
 ### 7.5 退出条件
 
